@@ -325,14 +325,14 @@
       var t = max === min ? (idx === 0 ? 1 : 0.55) : (wd.n - min) / (max - min);
       var fs = Math.round(small + (big - small) * Math.sqrt(t));
       for (var attempt = 0; attempt < 4; attempt++) {
-        var w = textWidth(wd.w, fs) + fs * 0.45, hh = fs * 1.18;
+        var w = textWidth(wd.w, fs) + fs * 0.6 + 10, hh = fs * 1.3 + 8;
         if (w > W * 0.94) { fs = Math.floor(fs * (W * 0.94) / w); continue; }
         var done = false;
         for (var s = 0; s < 1400; s++) {
           var a = s * 0.32, rad = (fs * 0.06 + 1.6) * a;
           var x = cx + rad * Math.cos(a) * Math.max(1, ratio * 0.8), y = cy + rad * Math.sin(a);
           var rect = { x: x - w / 2, y: y - hh / 2, w: w, h: hh };
-          if (!hit(rect)) { placed.push(rect); out.push({ k: wd.k, w: wd.w, n: wd.n, x: x, y: y, fs: fs, rank: idx }); done = true; break; }
+          if (!hit(rect)) { placed.push(rect); out.push({ k: wd.k, w: wd.w, n: wd.n, x: x, y: y, fs: fs, rank: idx, bw: w, bh: hh }); done = true; break; }
         }
         if (done) break;
         fs = Math.max(small * 0.7, Math.floor(fs * 0.8));
@@ -351,12 +351,52 @@
     var W = box.clientWidth, H = box.clientHeight;
     if (!W || !H) { box._pending = res; return; }
     var spots = layoutCloud(words, W, H, o.compact), have = {};
-    Array.prototype.forEach.call(box.children, function (c) { have[c.getAttribute('data-k')] = c; });
+    Array.prototype.forEach.call(box.querySelectorAll('.lv-word'), function (c) { have[c.getAttribute('data-k')] = c; });
     var keep = {};
-    spots.forEach(function (s) {
+    // 마인드맵처럼: 가장 많이 나온 말(가운데)에서 다른 말로 가는 가는 선
+    var svgNS = 'http://www.w3.org/2000/svg', links = box.querySelector('.lv-links');
+    if (!links) { links = document.createElementNS(svgNS, 'svg'); links.setAttribute('class', 'lv-links'); box.insertBefore(links, box.firstChild); }
+    links.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var hub = spots[0], lhtml = '', li = 0;
+    // 글자 상자 가장자리까지 거리 (선이 글자 위를 지나가지 않게)
+    function edge(sp, dx, dy) {
+      var hw = sp.bw / 2 - 4, hh = sp.bh / 2 - 6;
+      var tx = dx ? hw / Math.abs(dx) : Infinity, ty = dy ? hh / Math.abs(dy) : Infinity;
+      return Math.min(tx, ty);
+    }
+    function crosses(ax, ay, bx, by, skip) {
+      for (var j = 0; j < spots.length; j++) {
+        var o2 = spots[j]; if (o2 === hub || o2 === skip) continue;
+        for (var t = 0.08; t < 0.95; t += 0.06) {
+          var px = ax + (bx - ax) * t, py = ay + (by - ay) * t;
+          if (Math.abs(px - o2.x) < o2.bw / 2 - 6 && Math.abs(py - o2.y) < o2.bh / 2 - 8) return true;
+        }
+      }
+      return false;
+    }
+    spots.slice(1, o.compact ? 12 : 22).forEach(function (sp) {
+      var dx = sp.x - hub.x, dy = sp.y - hub.y, d = Math.sqrt(dx * dx + dy * dy);
+      if (!d) return;
+      var ux = dx / d, uy = dy / d, a = edge(hub, ux, uy) + 6, b = edge(sp, ux, uy) + 6;
+      if (a + b + 14 > d) return; // 너무 붙어 있으면 선 없음
+      var x1 = hub.x + ux * a, y1 = hub.y + uy * a, x2 = sp.x - ux * b, y2 = sp.y - uy * b;
+      if (crosses(x1, y1, x2, y2, sp)) return;
+      lhtml += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
+        '" style="animation-delay:' + (li++ * 0.05).toFixed(2) + 's"/>';
+    });
+    if (links._sig !== lhtml) { links.innerHTML = lhtml; links._sig = lhtml; }
+    if (links._drawn) links.classList.add('lv-static'); // 처음 한 번만 선이 그려지는 효과
+    links._drawn = true;
+    spots.forEach(function (s, i) {
       var el = have[s.k];
-      if (!el) { el = h('span', 'lv-word' + (box._first ? '' : ' lv-new')); el.setAttribute('data-k', s.k); box.appendChild(el); }
-      el.textContent = s.w;
+      if (!el) {
+        el = h('span', 'lv-word' + (box._first ? '' : ' lv-new'), '<span class="lv-wi"></span>'); el.setAttribute('data-k', s.k); box.appendChild(el);
+        // 말마다 속도 · 시작점이 달라야 둥둥 떠 있는 느낌이 난다
+        var seed = 0; for (var c = 0; c < s.k.length; c++) seed = (seed * 31 + s.k.charCodeAt(c)) % 997;
+        el.firstChild.style.animationDuration = (4.5 + (seed % 30) / 10) + 's';
+        el.firstChild.style.animationDelay = (-(seed % 50) / 10) + 's';
+      }
+      el.firstChild.textContent = s.w;
       el.className = 'lv-word' + (s.rank < 3 ? ' lv-hot' : s.rank < 10 ? ' lv-r1' : '') + (el.classList.contains('lv-new') ? ' lv-new' : '');
       el.style.left = s.x + 'px'; el.style.top = s.y + 'px'; el.style.fontSize = s.fs + 'px';
       el.title = s.n + '번';

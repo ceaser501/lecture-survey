@@ -340,76 +340,6 @@
     });
     return out;
   }
-  // 함께 쓴 말끼리 가까이 오도록 자리를 다듬는다 (용수철 + 겹침 밀어내기). 이전 자리에서 시작해 크게 튀지 않게
-  function relaxCloud(spots, links, W, H, prev) {
-    if (!links.length || spots.length < 2) return spots;
-    var at = {}; spots.forEach(function (sp) { at[sp.k] = sp; if (prev && prev[sp.k]) { sp.x = prev[sp.k].x; sp.y = prev[sp.k].y; } });
-    var L = links.filter(function (l) { return at[l.a] && at[l.b]; });
-    var cx = W / 2, cy = H / 2, sc = Math.min(1, W / 1300), gapX = 90 * sc, gapY = 46 * sc;
-    for (var it = 0; it < 260; it++) {
-      var cool = 1 - it / 300;
-      L.forEach(function (l) {
-        var A = at[l.a], B = at[l.b], dx = B.x - A.x, dy = B.y - A.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
-        var want = (A.bw + B.bw) / 2 + 110 * sc;
-        var f = (d - want) / d * 0.04 * Math.min(3, l.n) * cool;
-        A.x += dx * f; A.y += dy * f; B.x -= dx * f; B.y -= dy * f;
-      });
-      spots.forEach(function (sp) { sp.x += (cx - sp.x) * 0.002; sp.y += (cy - sp.y) * 0.004; });
-      for (var i = 0; i < spots.length; i++) for (var j = i + 1; j < spots.length; j++) {
-        var P = spots[i], Q = spots[j];
-        var ox = (P.bw + Q.bw) / 2 + gapX - Math.abs(P.x - Q.x), oy = (P.bh + Q.bh) / 2 + gapY - Math.abs(P.y - Q.y);
-        if (ox > 0 && oy > 0) {
-          if (ox / (P.bw + Q.bw) < oy / (P.bh + Q.bh)) { var sx = (P.x < Q.x ? -1 : 1) * ox / 2; P.x += sx; Q.x -= sx; }
-          else { var sy = (P.y < Q.y ? -1 : 1) * oy / 2; P.y += sy; Q.y -= sy; }
-        }
-      }
-      spots.forEach(function (sp) {
-        sp.x = Math.max(sp.bw / 2 + 4, Math.min(W - sp.bw / 2 - 4, sp.x));
-        sp.y = Math.max(sp.bh / 2 + 2, Math.min(H - sp.bh / 2 - 2, sp.y));
-      });
-    }
-    return spots;
-  }
-
-  // 같은 학생이 함께 보낸 말끼리 선으로 잇는다. 굵을수록 같이 쓴 사람이 많다
-  function drawLinks(box, spots, links, W, H, o) {
-    var svgNS = 'http://www.w3.org/2000/svg', svg = box.querySelector('.lv-links'), legend = box.querySelector('.lv-legend');
-    var at = {}; spots.forEach(function (sp) { at[sp.k] = sp; });
-    var max = 1; links.forEach(function (l) { if (l.n > max) max = l.n; });
-    function edge(sp, ux, uy) {
-      var hw = sp.bw / 2 - 2, hh = sp.bh / 2 - 4;
-      return Math.min(ux ? hw / Math.abs(ux) : Infinity, uy ? hh / Math.abs(uy) : Infinity);
-    }
-    var out = '', shown = 0;
-    links.slice(0, o.compact ? 20 : 40).forEach(function (l) {
-      var A = at[l.a], B = at[l.b]; if (!A || !B) return;
-      var dx = B.x - A.x, dy = B.y - A.y, d = Math.sqrt(dx * dx + dy * dy); if (!d) return;
-      var ux = dx / d, uy = dy / d, ea = edge(A, ux, uy) + 6, eb = edge(B, ux, uy) + 6;
-      if (ea + eb + 8 > d) return;
-      var x1 = A.x + ux * ea, y1 = A.y + uy * ea, x2 = B.x - ux * eb, y2 = B.y - uy * eb;
-      // 다른 말을 가로지르면 그리지 않는다 (읽기 어려워짐)
-      for (var j = 0; j < spots.length; j++) {
-        var O = spots[j]; if (O === A || O === B) continue;
-        for (var u = 0.05; u < 0.96; u += 0.05) {
-          var px = x1 + (x2 - x1) * u, py = y1 + (y2 - y1) * u;
-          if (Math.abs(px - O.x) < O.bw / 2 - 2 && Math.abs(py - O.y) < O.bh / 2 - 4) return;
-        }
-      }
-      var t = max > 1 ? (l.n - 1) / (max - 1) : 0, sw = (o.compact ? 1 : 1.6) + t * (o.compact ? 3 : 5);
-      out += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) +
-        '" stroke-width="' + sw.toFixed(1) + '" class="' + (l.n === max && max > 1 ? 'lv-strong' : '') + '"/>';
-      if (l.n >= 2 && !o.compact && Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)) > 80) {
-        out += '<text x="' + ((x1 + x2) / 2).toFixed(1) + '" y="' + ((y1 + y2) / 2 - 8).toFixed(1) + '">' + l.n + '명</text>';
-      }
-      shown++;
-    });
-    if (!svg) { svg = document.createElementNS(svgNS, 'svg'); svg.setAttribute('class', 'lv-links'); box.insertBefore(svg, box.firstChild); }
-    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-    svg.innerHTML = out;
-    if (!legend) { legend = h('div', 'lv-legend', '선: 같은 사람이 함께 쓴 말 · 굵을수록 많이'); box.appendChild(legend); }
-    legend.style.display = shown ? '' : 'none';
-  }
-
   function renderCloud(body, res, o) {
     var words = res.data || [];
     if (!words.length) { body.innerHTML = '<div class="lv-msg">아직 들어온 말이 없어요</div>'; return; }
@@ -420,12 +350,9 @@
     if (o.compact && !body.style.height) body.style.height = '260px';
     var W = box.clientWidth, H = box.clientHeight;
     if (!W || !H) { box._pending = res; return; }
-    var LH = (res.links || []).length ? H - (o.compact ? 18 : 32) : H; // 아래 설명 한 줄 자리
-    var spots = relaxCloud(layoutCloud(words, W, LH, o.compact), res.links || [], W, LH, box._pos), have = {};
-    box._pos = {}; spots.forEach(function (sp) { box._pos[sp.k] = { x: sp.x, y: sp.y }; });
+    var spots = layoutCloud(words, W, H, o.compact), have = {};
     Array.prototype.forEach.call(box.querySelectorAll('.lv-word'), function (c) { have[c.getAttribute('data-k')] = c; });
     var keep = {};
-    drawLinks(box, spots, res.links || [], W, H, o);
     spots.forEach(function (s, i) {
       var el = have[s.k];
       if (!el) {

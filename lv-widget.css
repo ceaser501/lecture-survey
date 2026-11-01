@@ -81,12 +81,6 @@
   66%{transform:translate(-3px,-2px) rotate(-.5deg)}
   100%{transform:translate(1px,6px) rotate(.3deg)}}
 @keyframes lv-pop{from{opacity:0;transform:translate(-50%,-50%) scale(.3)}}
-.lv-links{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-.lv-links line{stroke:#48484A;stroke-linecap:round;transition:opacity .4s}
-.lv-links line.lv-strong{stroke:#8E8E93}
-.lv-links text{fill:var(--lv-sub);font-size:15px;font-weight:600;text-anchor:middle;font-family:inherit}
-.lv-legend{position:absolute;left:0;bottom:0;font-size:15px;color:var(--lv-mute)}
-.lv-compact .lv-legend{font-size:11px}
 .lv-word .lv-wi{text-shadow:0 0 6px var(--lv-bg),0 0 12px var(--lv-bg)}
 .lv-word.lv-hot .lv-wi{text-shadow:0 0 6px var(--lv-bg),0 0 28px rgba(255,159,10,.35)}
 

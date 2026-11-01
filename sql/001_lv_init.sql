@@ -344,6 +344,21 @@ language sql stable security definer set search_path = public as $$
   where a.room_id = p_room and a.status in ('approved','answered') and not a.blocked;
 $$;
 
+-- 결과 화면용: 응답이 있거나 지금 열린 질문만 (아직 안 연 질문은 미리 드러나지 않게)
+create or replace function public.lv_room_slides(p_room text) returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when r.id is null then null else jsonb_build_object(
+    'room', r.id, 'title', r.title, 'active', r.active_question_id,
+    'qa', (select count(*) from public.lv_qa a where a.room_id = r.id and a.status in ('approved','answered') and not a.blocked),
+    'items', coalesce((select jsonb_agg(jsonb_build_object('id', q.id, 'type', q.type, 'prompt', q.prompt,
+                 'n', (select count(distinct client_id) from public.lv_responses x where x.question_id = q.id),
+                 'open', q.id = r.active_question_id) order by q.sort, q.created_at)
+       from public.lv_questions q
+       where q.room_id = r.id
+         and (q.id = r.active_question_id or exists (select 1 from public.lv_responses x where x.question_id = q.id))), '[]'::jsonb)) end
+  from (select 1) z left join public.lv_rooms r on r.id = p_room;
+$$;
+
 -- ───────── 강사 전용 함수 ─────────
 create or replace function public.lv_admin_open(p_room text, p_qid uuid) returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -420,13 +435,13 @@ do $$ declare f text; begin
   foreach f in array array['lv_is_admin()','lv_norm(text)','lv_has_blocked(text)','lv_rate_ok(text)',
       'lv_cid_ok(text)','lv_state(text)','lv_results(uuid)','lv_board(text,text)','lv_mine(uuid,text)',
       'lv_submit(text,uuid,text,text[])','lv_qa_list(text,text)','lv_qa_post(text,text,text)',
-      'lv_qa_like(bigint,text)','lv_qa_board(text)','lv_admin_open(text,uuid)',
+      'lv_qa_like(bigint,text)','lv_qa_board(text)','lv_room_slides(text)','lv_admin_open(text,uuid)',
       'lv_admin_wipe(text,boolean)','lv_notify()'] loop
     execute format('revoke all on function public.%s from public, anon, authenticated', f);
   end loop;
   foreach f in array array['lv_state(text)','lv_results(uuid)','lv_board(text,text)','lv_mine(uuid,text)',
       'lv_submit(text,uuid,text,text[])','lv_qa_list(text,text)','lv_qa_post(text,text,text)',
-      'lv_qa_like(bigint,text)','lv_qa_board(text)'] loop
+      'lv_qa_like(bigint,text)','lv_qa_board(text)','lv_room_slides(text)'] loop
     execute format('grant execute on function public.%s to anon, authenticated', f);
   end loop;
   execute 'grant execute on function public.lv_admin_open(text,uuid) to authenticated';

@@ -442,10 +442,11 @@
   function mount(box) {
     if (box._lv) return box._lv;
     var room = box.getAttribute('data-room') || 'w1';
-    var key = (box.getAttribute('data-q') || 'live').trim();
+    var qid = box.getAttribute('data-qid') || ''; // 관리 화면 · 전체보기용: 질문 id 로 직접
+    var key = qid ? '' : (box.getAttribute('data-q') || 'live').trim();
     var isQA = key === 'qa', isLive = key === 'live';
-    var showPrompt = box.getAttribute('data-prompt') ? box.getAttribute('data-prompt') !== 'hide' : isLive;
-    var autoOpen = box.getAttribute('data-open') !== '0';
+    var showPrompt = box.getAttribute('data-prompt') ? box.getAttribute('data-prompt') !== 'hide' : (isLive || !!qid);
+    var autoOpen = qid ? false : box.getAttribute('data-open') !== '0';
     var autoClose = box.getAttribute('data-close') === '1';
     var showSide = box.getAttribute('data-qr') !== '0';
     var slide = box.closest('section.slide, .slide');
@@ -495,6 +496,7 @@
         return;
       }
       if (d.err === 'no_room') { showMsg('방 <code>' + esc(room) + '</code> 이 없어요', true); return; }
+      if (d.missing && qid) { prompt.textContent = ''; setCount(0); setState(null); showMsg('질문을 찾을 수 없어요 (삭제됐을 수 있어요)', true); return; }
       if (d.missing) {
         prompt.textContent = ''; setCount(0); setState(null);
         showMsg('관리 화면에서 <code>' + esc(key) + '</code> 키로 질문을 등록하세요', true); return;
@@ -512,14 +514,16 @@
     function refresh() {
       if (busy) { again = true; return; }
       busy = true;
-      var p = isQA ? rpc('lv_qa_board', { p_room: room }) : rpc('lv_board', { p_room: room, p_key: key });
+      var p = isQA ? rpc('lv_qa_board', { p_room: room })
+        : qid ? rpc('lv_results', { p_qid: qid }).then(function (r) { return r ? { room: room, result: r } : { room: room, missing: true }; })
+        : rpc('lv_board', { p_room: room, p_key: key });
       p.then(function (d) { if (d) { draw(d); maybeOpen(d); } }, function () {})
         .then(function () { busy = false; if (again) { again = false; refresh(); } });
     }
     var soon = debounce(refresh, 250);
 
     function maybeOpen(d) {
-      if (!st.active || isQA || isLive || !autoOpen || !auth.get() || st.opening) return;
+      if (!st.active || isQA || isLive || qid || !autoOpen || !auth.get() || st.opening) return;
       if (!d.result || d.result.open || st.lastOpenedId === d.result.id) return;
       st.opening = true; st.lastOpenedId = d.result.id;
       rpc('lv_admin_open', { p_room: room, p_qid: d.result.id }, true)

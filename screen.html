@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>결과 화면</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="lv-widget.css">
+<style>
+/* 결과 화면: 첫 장은 참여 QR, 학생들이 답하면 질문마다 장표가 하나씩 생긴다 */
+:root{--bg:#000;--card:#1C1C1E;--card2:#2C2C2E;--ink:#F5F5F7;--sub:#A1A1A6;--mute:#6E6E73;--acc:#FF9F0A}
+html,body{margin:0;height:100%;background:#000;color:var(--ink);overflow:hidden;
+  font-family:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:center;padding:64px 90px 80px;box-sizing:border-box;display:flex;flex-direction:column}
+.sk{font-size:24px;font-weight:700;color:var(--acc);margin-bottom:8px;min-height:30px}
+#stage .lv-box{flex:1;height:auto;min-height:0}
+#stage .lv-prompt{font-size:52px;font-weight:800;line-height:1.22;letter-spacing:-.02em;margin-bottom:34px}
+#stage .lv-foot{display:none}
+#stage .lv-msg{font-size:30px}
+/* 표지 */
+.cover{flex:1;display:flex;align-items:center;gap:90px}
+.cover .l{flex:1}
+.cover h1{font-size:76px;font-weight:800;line-height:1.15;letter-spacing:-.03em;margin:0 0 40px}
+.cover ol{margin:0;padding:0;list-style:none;font-size:30px;line-height:1.5;color:var(--sub)}
+.cover li{margin-bottom:14px}
+.cover li b{display:inline-block;width:44px;color:var(--acc)}
+.cover .r{text-align:center}
+.cover .qr{width:440px;height:440px;background:#fff;border-radius:28px;padding:14px;box-sizing:border-box}
+.cover .qr svg{width:100%;height:100%;display:block}
+.cover .u{margin-top:20px;font-size:24px;color:var(--sub);line-height:1.4}
+.cover .u b{color:var(--ink)}
+.cover .wait{margin-top:44px;font-size:22px;color:var(--mute)}
+/* 아래 막대 */
+.bar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;align-items:center;padding:8px;border-radius:16px;
+  background:rgba(28,28,30,.94);opacity:0;transition:opacity .3s;z-index:10}
+body.show-bar .bar,.bar:hover{opacity:1}
+.bar button{font:inherit;font-size:15px;font-weight:600;border:0;border-radius:10px;padding:10px 14px;background:#2C2C2E;color:#F5F5F7;cursor:pointer;white-space:nowrap}
+.bar button.pri{background:var(--acc);color:#000}
+.bar button:disabled{opacity:.35;cursor:default}
+.bar .pos{font-size:14px;color:var(--sub);padding:0 8px;min-width:64px;text-align:center}
+.dots{position:fixed;left:0;right:0;bottom:6px;display:flex;justify-content:center;gap:8px;pointer-events:none}
+.dots i{width:8px;height:8px;border-radius:50%;background:#2C2C2E}
+.dots i.on{background:var(--sub)}
+.dots i.live{background:var(--acc)}
+.off{position:fixed;right:16px;top:12px;font-size:14px;color:var(--mute);display:none}
+body.offline .off{display:block}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="dots" id="dots"></div>
+<div class="off">연결 안 됨</div>
+<div class="bar" id="bar">
+  <button id="prev" title="이전 (←)">←</button>
+  <span class="pos" id="pos"></span>
+  <button id="next" title="다음 (→)">→</button>
+  <button id="jump" title="강사가 연 질문으로">지금 열린 질문</button>
+  <button id="toggle" class="pri" title="학생 응답 받기 시작/마감 (강사 로그인 필요)">열기</button>
+  <button id="fs" title="전체화면 (F)">전체화면</button>
+</div>
+
+<script>window.LV_CONFIG = { manual: true };</script>
+<script src="lv-widget.js"></script>
+<script>
+(function () {
+  'use strict';
+  var LV = window.LV, esc = LV.esc, $ = function (id) { return document.getElementById(id); };
+  var TYPE = { choice: '객관식', text: '주관식', wordcloud: '워드클라우드' };
+  var params = new URLSearchParams(location.search);
+  var room = (params.get('r') || 'w1').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  var S = { title: '', slides: [{ k: 'cover' }], cur: params.get('s') || params.get('q') || 'cover', active: null, widget: null, shown: null };
+
+  function fit() {
+    var s = Math.min(innerWidth / 1600, innerHeight / 900);
+    $('stage').style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+  addEventListener('resize', fit); fit();
+
+  function idx() { for (var i = 0; i < S.slides.length; i++) if (S.slides[i].k === S.cur) return i; return -1; }
+  function slide() { return S.slides[Math.max(0, idx())]; }
+
+  /* 장표 그리기 — 같은 장표면 다시 만들지 않고 위젯이 스스로 갱신 */
+  function show() {
+    var sl = slide();
+    if (idx() < 0) S.cur = sl.k;
+    history.replaceState(null, '', '?r=' + room + (S.cur === 'cover' ? '' : '&s=' + encodeURIComponent(S.cur)));
+    drawBar();
+    if (S.shown === S.cur) return;
+    S.shown = S.cur;
+    if (S.widget) { S.widget.destroy(); S.widget = null; }
+    var st = $('stage');
+    if (sl.k === 'cover') {
+      var url = LV.roomUrl(room);
+      st.innerHTML = '<div class="sk">' + esc(S.title) + '</div><div class="cover"><div class="l"><h1>폰으로<br>참여해 주세요</h1><ol>' +
+        '<li><b>1</b>카메라로 QR 코드 찍기</li><li><b>2</b>열린 페이지를 닫지 말고 그대로 두기</li><li><b>3</b>질문이 뜨면 답하기 · 이름은 남지 않아요</li></ol></div>' +
+        '<div class="r"><div class="qr">' + LV.qrSvg(url) + '</div><div class="u">' + LV.urlLines(room) + '</div></div></div>';
+      return;
+    }
+    st.innerHTML = '<div class="sk"></div>';
+    var box = document.createElement('div');
+    box.className = 'lv-box';
+    box.setAttribute('data-room', room);
+    if (sl.k === 'qa') box.setAttribute('data-q', 'qa');
+    else { box.setAttribute('data-qid', sl.k); box.setAttribute('data-prompt', 'show'); }
+    st.appendChild(box);
+    S.widget = LV.mount(box);
+    if (sl.k === 'qa') {
+      var t = document.createElement('div'); t.className = 'lv-prompt'; t.textContent = '궁금한 것, 익명으로 물어보세요';
+      box.querySelector('.lv-main').insertBefore(t, box.querySelector('.lv-body'));
+    }
+    drawBar();
+  }
+
+  function drawBar() {
+    var i = idx(), n = S.slides.length, sl = slide(), logged = !!LV.auth.get();
+    var sk = document.querySelector('#stage .sk');
+    if (sk && sl.k !== 'cover') sk.textContent = S.title + ' · ' + (sl.k === 'qa' ? 'Q&A' : TYPE[sl.type] || '');
+    $('prev').disabled = i <= 0;
+    $('next').disabled = i >= n - 1;
+    $('pos').textContent = (i + 1) + ' / ' + n;
+    $('jump').style.display = S.active && S.cur !== S.active ? '' : 'none';
+    var t = $('toggle');
+    if (!logged || sl.k === 'cover' || sl.k === 'qa') t.style.display = 'none';
+    else { var open = S.active === sl.k; t.style.display = ''; t.textContent = open ? '마감' : '열기'; t.className = open ? '' : 'pri'; }
+    $('dots').innerHTML = S.slides.map(function (s, k) { return '<i class="' + (k === i ? 'on' : s.k === S.active ? 'live' : '') + '"></i>'; }).join('');
+  }
+
+  function go(d) {
+    var j = idx() + d;
+    if (j < 0 || j >= S.slides.length) return;
+    S.cur = S.slides[j].k; show();
+  }
+
+  /* 장표 목록: 응답이 들어온 질문 + 지금 열린 질문, 마지막에 Q&A */
+  var busy = false, again = false;
+  function load() {
+    if (busy) { again = true; return; }
+    busy = true;
+    LV.rpc('lv_room_slides', { p_room: room }).then(function (d) {
+      if (!d) { $('stage').innerHTML = '<div class="sk">방 ' + esc(room) + ' 이 없어요</div>'; return; }
+      var prevActive = S.active;
+      S.title = d.title; S.active = d.active;
+      document.title = '결과 · ' + d.title;
+      S.slides = [{ k: 'cover' }].concat(d.items.map(function (q) { return { k: q.id, type: q.type }; }));
+      if (d.qa > 0) S.slides.push({ k: 'qa' });
+      // 강사가 새 질문을 열면 그 장표로 넘어간다
+      if (d.active && d.active !== prevActive && prevActive !== undefined && S.loaded) S.cur = d.active;
+      S.loaded = true;
+      if (S.shown === 'cover') { var sk = document.querySelector('#stage .sk'); if (sk) sk.textContent = S.title; }
+      show();
+    }, function () {}).then(function () { busy = false; if (again) { again = false; load(); } });
+  }
+  var loadSoon = (function () { var t; return function () { clearTimeout(t); t = setTimeout(load, 500); }; })();
+
+  $('prev').onclick = function (e) { e.stopPropagation(); go(-1); };
+  $('next').onclick = function (e) { e.stopPropagation(); go(1); };
+  $('jump').onclick = function (e) { e.stopPropagation(); if (S.active) { S.cur = S.active; show(); } };
+  $('toggle').onclick = function (e) {
+    e.stopPropagation();
+    var target = S.active === S.cur ? null : S.cur;
+    LV.rpc('lv_admin_open', { p_room: room, p_qid: target }, true).then(load, function () { LV.toast('강사 로그인이 필요해요 (관리 화면에서 로그인)'); });
+  };
+  $('fs').onclick = function (e) {
+    if (e) e.stopPropagation();
+    if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(function () {});
+  };
+  // 화면 아무 곳이나 누르면 다음 장, 키보드 ← →
+  document.addEventListener('click', function (e) { if (!e.target.closest('button, a, .bar')) go(1); });
+  addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(-1);
+    else if (e.key === 'f' || e.key === 'F') $('fs').onclick();
+    else if (e.key === 'Home') { S.cur = 'cover'; show(); }
+  });
+  var hideT;
+  addEventListener('mousemove', function () {
+    document.body.classList.add('show-bar');
+    clearTimeout(hideT); hideT = setTimeout(function () { document.body.classList.remove('show-bar'); }, 2500);
+  });
+  LV.onNet(function (n) { document.body.classList.toggle('offline', !n.rest); });
+  LV.rt.sub(room, function (m) { if (m.t !== 'qa' || !S.slides.some(function (s) { return s.k === 'qa'; })) loadSoon(); });
+  setInterval(load, LV.net.rt ? 15000 : 4000);
+
+  show();
+  load();
+})();
+</script>
+</body>
+</html>

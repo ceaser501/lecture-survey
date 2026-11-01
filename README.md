@@ -9,9 +9,24 @@
 | 학생 (2주차) | https://ceaser501.github.io/lecture-survey/?r=w2 |
 | 학생 (3주차) | https://ceaser501.github.io/lecture-survey/?r=w3 |
 | 강사 관리 (PC · 폰) | https://ceaser501.github.io/lecture-survey/admin.html |
+| **결과 화면** (강의실 화면에 띄움) | https://ceaser501.github.io/lecture-survey/screen.html?r=w1 |
 | 덱 위젯 예시 | `deck-example.html` (내려받아 `file://`로 열기) |
 
 QR 이미지: `qr/w1.png`, `qr/w2.png`, `qr/w3.png` (인쇄용 1200px, SVG도 있음). 방마다 1개, 질문과 상관없이 그대로 씁니다.
+
+## 가장 쉬운 사용법 (덱 연동 없이)
+
+1. **강의 전** — 관리 화면에서 방(w1)을 고르고 「+ 새 질문」으로 질문을 올려 둔다.
+2. **강의 시작** — 강의실 화면에 **결과 화면**(`screen.html?r=w1`, 관리 화면 위쪽 「결과 화면」 버튼)을 띄운다. 첫 장은 참여 QR.
+3. **질문** — 관리 화면(폰도 됨)에서 「열기」 → 학생 폰이 그 질문으로 바뀌고, 결과 화면도 그 질문 장표로 넘어간다.
+4. **결과** — 답이 들어올 때마다 장표가 바로 바뀐다 (새로고침 필요 없음). 답이 들어온 질문마다 장표가 한 장씩 생기고, 마지막 장은 Q&A.
+   ← → 키나 화면 클릭으로 넘기고, `F` 는 전체화면.
+5. **관리 화면 「결과 보기」 탭** — 모든 질문의 결과를 장표 모양으로 한눈에. 답 관리(숨기기)도 여기서.
+
+## 질문 설정 두 가지
+
+- **장표 연결 키** — 강의 덱(HTML) 장표 안에 결과를 직접 붙일 때만 쓰는 이름표. 덱 장표에 `<div class="lv-box" data-room="w1" data-q="agi">`를 넣으면 키가 `agi`인 질문의 결과가 그 장표에 뜨고, 장표에 들어가면 질문이 자동으로 열린다. 결과 화면만 쓸 거면 비워 둔다.
+- **학생 폰에도 결과 보여주기** — 켜면 학생이 답을 보낸 뒤 자기 폰에서 지금까지의 결과(막대 · 단어 · 카드)를 볼 수 있다. 끄면(기본) 결과는 강사 화면에만 나온다. 결과를 공개하며 이야기를 끌어갈 때는 켜고, 서로 답에 휩쓸리지 않게 하려면 끈다.
 
 ## 구조
 
@@ -79,6 +94,7 @@ insert into public.lv_admins (email) values ('강사 이메일');
 |---|---|
 | `index.html` | 학생 페이지 |
 | `admin.html` | 강사 관리 페이지 |
+| `screen.html` | 결과 화면 (첫 장 참여 QR → 답이 들어온 질문마다 한 장 → Q&A) |
 | `lv-widget.css`, `lv-widget.js` | 덱용 조각 (`lv-widget.js`는 만들어진 파일 — 고칠 때는 `src/lv-widget.src.js`를 고치고 `node tools/build.mjs`) |
 | `deck-example.html` | 장표 4장짜리 예시 (워드클라우드 · 객관식 · 즉석 질문 · Q&A) |
 | `sql/001_lv_init.sql` | 테이블 · 권한(RLS) · 함수 · 실시간 알림 |

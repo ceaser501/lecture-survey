@@ -122,11 +122,27 @@ textarea{resize:vertical;min-height:70px}
 .blk button{border:0;background:#000;color:var(--sub);border-radius:999px;width:24px;height:24px;cursor:pointer}
 .netbar{display:none;max-width:1100px;margin:10px auto 0;padding:10px 14px;border-radius:12px;background:var(--card2);font-size:14px}
 .netbar.on{display:block}
+/* 질문 목록 · 더보기 메뉴 */
+.qi .qm{cursor:pointer;min-width:0}
+.qi .qn{display:inline-block;min-width:22px;color:var(--mute);font-weight:700}
+.more{min-width:42px;padding:0 10px;font-size:20px;letter-spacing:1px}
+.menu{position:absolute;z-index:60;min-width:180px;padding:6px;border-radius:14px;background:#2C2C2E;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:11px 12px;border-radius:9px;font-size:15px;cursor:pointer;color:var(--ink)}
+.menu button:hover{background:#3A3A3C}
+.menu button:disabled{opacity:.35;cursor:default;background:none}
+.menu button.danger{color:var(--acc)}
+.menu hr{border:0;border-top:1px solid #3A3A3C;margin:4px 6px}
+/* 결과 탭 */
+.rs{margin-bottom:28px}
+.rs-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.rs-h .t{flex:1;min-width:180px;font-size:14px;color:var(--sub)}
+.rs-h .t b{color:var(--ink);font-size:16px;margin-right:6px}
+.rs-h .on{color:var(--acc);font-weight:700}
+.slide16 .lv-foot{display:none}
+.hint{display:block;margin-top:6px;font-size:13px;color:var(--mute);line-height:1.5}
 @media (max-width:820px){
   .ed{grid-template-columns:1fr}
   .grid2{grid-template-columns:1fr}
-  .qi{grid-template-columns:1fr}
-  .qi .qa{justify-content:flex-start}
   .phone{margin:0 auto 18px}
   .brand{font-size:15px}
   .rooms button{padding:8px 11px}
@@ -175,11 +191,12 @@ textarea{resize:vertical;min-height:70px}
   /* ───────── 뼈대 ───────── */
   function shell() {
     app.innerHTML = '<div class="top"><div class="top-row"><div class="brand">라이브 참여</div><div class="rooms" id="rooms"></div>' +
-      '<button class="btn sm line" id="out">로그아웃</button></div>' +
+      '<button class="btn sm" id="scr">결과 화면</button><button class="btn sm line" id="out">로그아웃</button></div>' +
       '<div class="tabs" id="tabs"><button data-t="q">질문</button><button data-t="qa">Q&amp;A<span class="n" id="qan"></span></button>' +
-      '<button data-t="set">설정 · 데이터</button></div><div class="netbar" id="netbar">연결이 끊겼어요. 다시 연결 중…</div></div>' +
+      '<button data-t="res">결과 보기</button><button data-t="set">설정</button></div><div class="netbar" id="netbar">연결이 끊겼어요. 다시 연결 중…</div></div>' +
       '<div class="wrap" id="main"></div>' +
       '<div class="sheet" id="sheet" hidden><div class="in" id="sheet-in"></div></div>';
+    $('#scr').onclick = function () { fullView(null); };
     $('#out').onclick = function () { if (confirm('로그아웃할까요?')) { LV.auth.logout(); location.reload(); } };
     $$('#tabs button').forEach(function (b) { b.onclick = function () { S.tab = b.getAttribute('data-t'); S.view = null; render(); }; });
     var offT;
@@ -201,7 +218,7 @@ textarea{resize:vertical;min-height:70px}
   function pickRoom(id) {
     S.room = S.rooms.filter(function (r) { return r.id === id; })[0] || S.rooms[0];
     try { localStorage.setItem('lv-admin-room', S.room.id); } catch (e) {}
-    S.view = null;
+    S.view = null; clearRes();
     if (unsub) unsub();
     unsub = LV.rt.sub(S.room.id, function (m) {
       if (m.t === 'qa') reloadSoon('qa');
@@ -258,9 +275,53 @@ textarea{resize:vertical;min-height:70px}
     var pending = S.qa.filter(function (a) { return a.status === 'pending'; }).length;
     $('#qan').textContent = pending || '';
     if (S.view && S.view.type === 'results') return;
+    if (S.tab !== 'res') clearRes();
     if (S.tab === 'q') renderQuestions();
     else if (S.tab === 'qa') renderQA();
+    else if (S.tab === 'res') renderResultsTab();
     else renderSettings();
+    fitSlides();
+  }
+
+  /* ───────── 결과 보기 탭: 질문마다 장표 한 장 ───────── */
+  var resWidgets = [];
+  function clearRes() { resWidgets.forEach(function (w) { w.destroy(); }); resWidgets = []; S.resSig = null; }
+  function fullView(q) { window.open('screen.html?r=' + encodeURIComponent(S.room.id) + (q ? '&q=' + encodeURIComponent(q) : ''), 'lv-screen'); }
+  function slideHTML(kicker, title, attrs) {
+    return '<div class="slide16"><div class="sc"><div class="sk">' + esc(kicker) + '</div><div class="sh">' + esc(title) + '</div><div class="lv-box" ' + attrs + '></div></div></div>';
+  }
+  function renderResultsTab() {
+    var main = $('#main');
+    var sig = S.room.id + '|' + S.questions.map(function (q) { return q.id + q.type + q.prompt + JSON.stringify(q.options); }).join(',');
+    if (S.resSig === sig && $('#res-list')) return updateResHeads();
+    clearRes(); S.resSig = sig;
+    var html = '<div class="toolbar"><div><b>결과 ' + S.questions.length + '개 + Q&amp;A</b><div class="small">응답이 들어오면 바로 바뀌어요. 「결과 화면」은 강의실 화면에 띄우는 새 창이에요 (첫 장 참여 QR → 답이 들어온 질문마다 한 장)</div></div>' +
+      '<span class="sp"></span><button class="btn pri" id="full-live">결과 화면 열기 (새 창)</button></div><div id="res-list">';
+    if (!S.questions.length) html += '<div class="empty">아직 질문이 없어요. 「질문」 탭에서 만들어 주세요.</div>';
+    S.questions.forEach(function (q, i) {
+      html += '<section class="rs" data-q="' + q.id + '"><div class="rs-h"><div class="t"><b>' + (i + 1) + '</b>' + TYPE[q.type] + (q.key ? ' · 키 ' + esc(q.key) : '') +
+        ' <span class="st"></span></div><span class="ob"></span><button class="btn sm" data-res="' + q.id + '">답 관리</button>' +
+        '<button class="btn sm" data-full="' + q.id + '">전체보기</button></div>' +
+        slideHTML(S.room.title + ' · ' + TYPE[q.type], q.prompt, 'data-room="' + esc(S.room.id) + '" data-qid="' + q.id + '" data-prompt="hide"') + '</section>';
+    });
+    html += '<section class="rs"><div class="rs-h"><div class="t"><b>Q&amp;A</b>승인한 질문, 「나도 궁금해」 많은 순</div><button class="btn sm" data-full="qa">전체보기</button></div>' +
+      slideHTML(S.room.title + ' · Q&A', '궁금한 것, 익명으로 물어보세요', 'data-room="' + esc(S.room.id) + '" data-q="qa"') + '</section></div>';
+    main.innerHTML = html;
+    $('#full-live').onclick = function () { fullView(null); };
+    $$('[data-full]', main).forEach(function (b) { b.onclick = function () { fullView(b.getAttribute('data-full')); }; });
+    $$('[data-res]', main).forEach(function (b) { b.onclick = function () { openResults(b.getAttribute('data-res')); }; });
+    fitSlides();
+    $$('.lv-box', main).forEach(function (el) { resWidgets.push(LV.mount(el)); });
+    updateResHeads();
+  }
+  function updateResHeads() {
+    $$('#res-list .rs[data-q]').forEach(function (sec) {
+      var id = sec.getAttribute('data-q'), open = S.room.active_question_id === id;
+      sec.querySelector('.st').innerHTML = open ? '· <span class="on">받는 중</span>' : '';
+      var ob = sec.querySelector('.ob');
+      ob.innerHTML = open ? '<button class="btn sm">닫기</button>' : '<button class="btn sm pri">열기</button>';
+      ob.firstChild.onclick = function () { openQ(open ? null : id); };
+    });
   }
 
   function activeQ() {
@@ -272,36 +333,68 @@ textarea{resize:vertical;min-height:70px}
     var a = activeQ(), main = $('#main');
     var html = '<h2>지금 열린 질문</h2><div class="card live">';
     if (a) html += '<div class="lt"><div class="lk">● ' + TYPE[a.type] + ' · 받는 중</div><div class="lp">' + esc(a.prompt) + '</div><div class="ln">' + (S.counts[a.id] || 0) + '명 참여</div></div>' +
-      '<button class="btn sm" data-res="' + a.id + '">결과 보기</button><button class="btn lg" id="close">닫기</button>';
+      '<button class="btn" id="live-full">전체보기</button><button class="btn lg" id="close">닫기</button>';
     else html += '<div class="lt"><div class="lk off">닫힘</div><div class="lp muted">학생 화면: 「강사가 질문을 열면 여기에 나타납니다」</div></div>';
     html += '</div>';
     html += '<h2 style="display:flex;align-items:center">질문 ' + S.questions.length + '개<span style="flex:1"></span><button class="btn pri" id="new">+ 새 질문</button></h2>';
-    if (!S.questions.length) html += '<div class="empty">아직 질문이 없어요.<br>「+ 새 질문」으로 만들고, 장표와 이어 쓰려면 <b>장표 연결 키</b>를 붙이세요.</div>';
+    if (!S.questions.length) html += '<div class="empty">아직 질문이 없어요.<br>「+ 새 질문」으로 강의에서 쓸 질문을 미리 올려 두세요.</div>';
     html += '<div class="qs">';
     S.questions.forEach(function (q, i) {
       var open = a && a.id === q.id;
-      html += '<div class="qi' + (open ? ' open' : '') + '"><div><div class="qt"><b>' + TYPE[q.type] + '</b>' + (q.key ? ' · 키 <span class="key">' + esc(q.key) + '</span>' : ' · 키 없음') +
-        ' · ' + (S.counts[q.id] || 0) + '명' + (open ? ' · <span class="key">받는 중</span>' : '') + '</div><div class="qp">' + esc(q.prompt) + '</div></div>' +
+      html += '<div class="qi' + (open ? ' open' : '') + '"><div class="qm" data-edit="' + q.id + '"><div class="qt"><span class="qn">' + (i + 1) + '</span><b>' + TYPE[q.type] + '</b>' +
+        (q.key ? ' · 키 <span class="key">' + esc(q.key) + '</span>' : '') + ' · ' + (S.counts[q.id] || 0) + '명' + (open ? ' · <span class="key">받는 중</span>' : '') +
+        '</div><div class="qp">' + esc(q.prompt) + '</div></div>' +
         '<div class="qa">' + (open ? '<button class="btn" data-close="1">닫기</button>' : '<button class="btn pri" data-open="' + q.id + '">열기</button>') +
-        '<button class="btn" data-res="' + q.id + '">결과</button></div>' +
-        '<div class="qx"><button class="btn sm line" data-edit="' + q.id + '">수정</button><button class="btn sm line" data-dup="' + q.id + '">복제</button>' +
-        '<button class="btn sm line" data-up="' + i + '"' + (i ? '' : ' disabled') + '>↑</button><button class="btn sm line" data-down="' + i + '"' + (i < S.questions.length - 1 ? '' : ' disabled') + '>↓</button>' +
-        '<button class="btn sm line" data-reset="' + q.id + '">결과 초기화</button><button class="btn sm line" data-del="' + q.id + '">삭제</button></div></div>';
+        '<button class="btn more" data-more="' + i + '" aria-label="더 보기">⋯</button></div></div>';
     });
     html += '</div>';
     main.innerHTML = html;
     if ($('#close')) $('#close').onclick = function () { openQ(null); };
+    if ($('#live-full')) $('#live-full').onclick = function () { fullView(null); };
     $('#new').onclick = function () { editor(null); };
     $$('[data-close]', main).forEach(function (b) { b.onclick = function () { openQ(null); }; });
     $$('[data-open]', main).forEach(function (b) { b.onclick = function () { openQ(b.getAttribute('data-open')); }; });
-    $$('[data-res]', main).forEach(function (b) { b.onclick = function () { openResults(b.getAttribute('data-res')); }; });
     $$('[data-edit]', main).forEach(function (b) { b.onclick = function () { editor(findQ(b.getAttribute('data-edit'))); }; });
-    $$('[data-dup]', main).forEach(function (b) { b.onclick = function () { dupQ(findQ(b.getAttribute('data-dup'))); }; });
-    $$('[data-up]', main).forEach(function (b) { b.onclick = function () { moveQ(+b.getAttribute('data-up'), -1); }; });
-    $$('[data-down]', main).forEach(function (b) { b.onclick = function () { moveQ(+b.getAttribute('data-down'), 1); }; });
-    $$('[data-reset]', main).forEach(function (b) { b.onclick = function () { resetQ(findQ(b.getAttribute('data-reset'))); }; });
-    $$('[data-del]', main).forEach(function (b) { b.onclick = function () { delQ(findQ(b.getAttribute('data-del'))); }; });
+    $$('[data-more]', main).forEach(function (b) {
+      b.onclick = function (e) {
+        e.stopPropagation();
+        var i = +b.getAttribute('data-more'), q = S.questions[i];
+        menu(b, [
+          ['수정', function () { editor(q); }],
+          ['결과 · 답 관리', function () { openResults(q.id); }],
+          ['전체보기', function () { fullView(q.id); }],
+          ['복제', function () { dupQ(q); }],
+          null,
+          ['위로', function () { moveQ(i, -1); }, false, i === 0],
+          ['아래로', function () { moveQ(i, 1); }, false, i === S.questions.length - 1],
+          null,
+          ['결과 초기화', function () { resetQ(q); }, true],
+          ['삭제', function () { delQ(q); }, true]
+        ]);
+      };
+    });
   }
+  function menu(anchor, items) {
+    closeMenu();
+    var m = document.createElement('div'); m.className = 'menu'; m.id = 'menu';
+    items.forEach(function (it) {
+      if (!it) { m.appendChild(document.createElement('hr')); return; }
+      var b = document.createElement('button'); b.textContent = it[0];
+      if (it[2]) b.className = 'danger';
+      if (it[3]) b.disabled = true;
+      b.onclick = function () { closeMenu(); it[1](); };
+      m.appendChild(b);
+    });
+    document.body.appendChild(m);
+    var r = anchor.getBoundingClientRect();
+    var left = Math.max(8, Math.min(r.right - m.offsetWidth, innerWidth - m.offsetWidth - 8));
+    var top = r.bottom + 6;
+    if (top + m.offsetHeight > innerHeight - 8) top = Math.max(8, r.top - m.offsetHeight - 6);
+    m.style.left = left + scrollX + 'px'; m.style.top = top + scrollY + 'px';
+  }
+  function closeMenu() { var m = $('#menu'); if (m) m.remove(); }
+  document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('#menu')) closeMenu(); });
+  window.addEventListener('scroll', closeMenu, { passive: true });
   function findQ(id) { return S.questions.filter(function (q) { return q.id === id; })[0]; }
 
   /* ───────── 질문 동작 ───────── */
@@ -349,12 +442,14 @@ textarea{resize:vertical;min-height:70px}
       '<label class="f"><span>질문 문구</span><textarea id="e-prompt" maxlength="200" rows="2"></textarea></label>' +
       '<div class="f" id="e-opts-w"><span class="small" style="display:block;margin-bottom:6px;color:var(--sub);font-size:14px">선택지 (2~6개)</span><div id="e-opts"></div>' +
       '<button class="btn sm line" id="e-add">+ 선택지 추가</button></div>' +
-      '<label class="f"><span>장표 연결 키 (선택 · 영문 소문자 · 숫자 · _ -)</span><input type="text" id="e-key" maxlength="30" placeholder="예: agi" autocapitalize="off" autocomplete="off" spellcheck="false">' +
+      '<label class="f"><span>장표 연결 키 (선택)</span><input type="text" id="e-key" maxlength="30" placeholder="예: agi" autocapitalize="off" autocomplete="off" spellcheck="false">' +
+      '<span class="hint">강의 덱 장표에 이 질문의 결과를 붙일 때 쓰는 이름표예요. 덱을 안 쓰고 「결과 보기」 탭 · 전체보기만 쓴다면 비워 두세요. (영문 소문자 · 숫자 · _ -)</span>' +
       '<span class="small" id="e-keyhint" style="display:block;margin-top:6px"></span></label>' +
       '<label class="check" id="e-chg-w"><input type="checkbox" id="e-chg"> 학생이 답을 바꿀 수 있음</label>' +
-      '<label class="check"><input type="checkbox" id="e-show"> 학생 폰에도 결과 보여주기 (보낸 뒤)</label>' +
+      '<label class="check" style="margin-bottom:2px"><input type="checkbox" id="e-show"> 학생 폰에도 결과 보여주기</label>' +
+      '<span class="hint" style="margin:0 0 14px 32px">켜면 학생이 답을 보낸 뒤 자기 폰에서 지금까지 결과를 볼 수 있어요. 끄면 결과는 강사 화면에만 나와요.</span>' +
       '</div><div class="pv"><div class="pvrow"><div><h4>학생 폰</h4><div class="phone"><iframe id="e-phone" src="index.html?preview=1" title="학생 화면 미리보기"></iframe></div></div>' +
-      '<div style="flex:1;min-width:280px"><h4>덱 결과 (예시 데이터)</h4><div class="slide16" id="e-slide"><div class="sc"><div class="sk">' + esc(S.room.title) +
+      '<div style="flex:1;min-width:280px"><h4>결과 화면 (예시 데이터)</h4><div class="slide16" id="e-slide"><div class="sc"><div class="sk">' + esc(S.room.title) +
       '</div><div class="sh" id="e-sh"></div><div class="lv-box" id="e-box"><div class="lv-w"><div class="lv-main"><div class="lv-prompt"></div><div class="lv-body" id="e-body"></div></div>' +
       '<div class="lv-side"><div class="lv-qr">' + LV.qrSvg(LV.roomUrl(S.room.id)) + '</div><div class="lv-url">' + LV.urlLines(S.room.id) + '</div>' +
       '<div class="lv-count"><b>32</b><span>명 참여</span></div><div class="lv-state lv-on">받는 중</div></div></div></div></div></div></div></div></div></div>' +
@@ -377,11 +472,11 @@ textarea{resize:vertical;min-height:70px}
     fitSlide();
   }
   function closeSheet() { $('#sheet').hidden = true; document.body.style.overflow = ''; S.edit = null; window.onmessage = null; render(); }
-  function fitSlide() {
-    var s = $('#e-slide'); if (!s) return;
-    $('.sc', s).style.transform = 'scale(' + (s.clientWidth / 1600) + ')';
+  function fitSlides() {
+    $$('.slide16').forEach(function (s) { if (s.clientWidth) $('.sc', s).style.transform = 'scale(' + (s.clientWidth / 1600) + ')'; });
   }
-  window.addEventListener('resize', fitSlide);
+  var fitSlide = fitSlides;
+  window.addEventListener('resize', fitSlides);
 
   function syncEd() {
     var d = S.edit;
@@ -403,7 +498,7 @@ textarea{resize:vertical;min-height:70px}
   }
   function syncKeyHint() {
     var k = S.edit.key, h = $('#e-keyhint'), clash = k && S.questions.some(function (q) { return q.key === k && q.id !== S.edit.id; });
-    if (!k) h.innerHTML = '키가 없으면 <code>data-q="live"</code> 장표에서 열린 동안에만 보여요';
+    if (!k) h.innerHTML = '';
     else if (k === 'live' || k === 'qa') h.innerHTML = '<span class="flag">live, qa 는 쓸 수 없는 이름이에요</span>';
     else if (clash) h.innerHTML = '<span class="flag">이 방에 같은 키가 이미 있어요</span>';
     else h.innerHTML = '장표에 <code>&lt;div class="lv-box" data-room="' + esc(S.room.id) + '" data-q="' + esc(k) + '"&gt;&lt;/div&gt;</code>';
@@ -470,6 +565,7 @@ textarea{resize:vertical;min-height:70px}
   /* ───────── 결과 · 숨기기 ───────── */
   function openResults(id, quiet) {
     var q = findQ(id); if (!q) { S.view = null; return render(); }
+    clearRes();
     S.view = { type: 'results', id: id };
     Promise.all([
       api('lv_responses?select=id,client_id,value,norm,hidden,blocked,created_at&question_id=eq.' + id + '&order=created_at.desc'),

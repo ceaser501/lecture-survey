@@ -309,7 +309,7 @@
   function layoutCloud(words, W, H, compact) {
     if (!words.length || W < 50 || H < 50) return [];
     var max = words[0].n, min = words[words.length - 1].n;
-    var big = Math.min(compact ? 54 : 128, H * 0.26), small = compact ? 15 : 24;
+    var big = Math.min(compact ? 54 : 128, H * 0.26), small = compact ? (words.length <= 12 ? 18 : 15) : (words.length <= 12 ? 34 : 24);
     if (words.length > 30) big *= 0.85;
     if (words.length > 55) big *= 0.85;
     var placed = [], out = [], cx = W / 2, cy = H / 2, ratio = W / H;
@@ -325,14 +325,16 @@
       var t = max === min ? (idx === 0 ? 1 : 0.55) : (wd.n - min) / (max - min);
       var fs = Math.round(small + (big - small) * Math.sqrt(t));
       for (var attempt = 0; attempt < 4; attempt++) {
-        var w = textWidth(wd.w, fs) + fs * 0.6 + 10, hh = fs * 1.3 + 8;
+        // 말이 적을수록 사이를 넓게 띄워서 마인드맵처럼 선이 보이게
+        var gap = (compact ? 0.5 : 1) * (words.length <= 8 ? 70 : words.length <= 16 ? 44 : 16);
+        var w = textWidth(wd.w, fs) + fs * 0.6 + 10 + gap, hh = fs * 1.3 + 8 + gap * 0.6;
         if (w > W * 0.94) { fs = Math.floor(fs * (W * 0.94) / w); continue; }
         var done = false;
         for (var s = 0; s < 1400; s++) {
           var a = s * 0.32, rad = (fs * 0.06 + 1.6) * a;
           var x = cx + rad * Math.cos(a) * Math.max(1, ratio * 0.8), y = cy + rad * Math.sin(a);
           var rect = { x: x - w / 2, y: y - hh / 2, w: w, h: hh };
-          if (!hit(rect)) { placed.push(rect); out.push({ k: wd.k, w: wd.w, n: wd.n, x: x, y: y, fs: fs, rank: idx, bw: w, bh: hh }); done = true; break; }
+          if (!hit(rect)) { placed.push(rect); out.push({ k: wd.k, w: wd.w, n: wd.n, x: x, y: y, fs: fs, rank: idx, bw: w - gap, bh: hh - gap * 0.6 }); done = true; break; }
         }
         if (done) break;
         fs = Math.max(small * 0.7, Math.floor(fs * 0.8));

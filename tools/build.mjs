@@ -14,3 +14,15 @@ src = src.replace("/*@@QRCODE@@*/ null", '(function(){var window={};' + qrMin + 
          .replace("'https://ceaser501.github.io/lecture-survey/'", JSON.stringify(cfg.site));
 writeFileSync(root + 'lv-widget.js', '/* lv-widget.js — 자동 생성 파일 (원본: src/lv-widget.src.js, 만들기: node tools/build.mjs)\n   QR 부분: qrcode-generator (c) 2009 Kazuhiko Arase, MIT License */\n' + src);
 console.log('lv-widget.js', (src.length / 1024).toFixed(1) + 'KB');
+
+// 페이지가 늘 새 파일을 받게: index · admin · screen 의 lv-widget.js / .css 주소에 내용 해시를 붙인다
+import { createHash } from 'node:crypto';
+const ver = (f) => createHash('md5').update(readFileSync(root + f)).digest('hex').slice(0, 8);
+const vjs = ver('lv-widget.js'), vcss = ver('lv-widget.css');
+for (const page of ['index.html', 'admin.html', 'screen.html']) {
+  const t = readFileSync(root + page, 'utf8')
+    .replace(/lv-widget\.js(\?v=[0-9a-f]+)?"/g, `lv-widget.js?v=${vjs}"`)
+    .replace(/lv-widget\.css(\?v=[0-9a-f]+)?"/g, `lv-widget.css?v=${vcss}"`);
+  writeFileSync(root + page, t);
+}
+console.log('version', vjs, vcss);

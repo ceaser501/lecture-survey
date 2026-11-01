@@ -114,7 +114,7 @@ end $$;
 -- ───────── 도우미 ─────────
 -- 같은 말 묶기: 공백 전부 제거 + 소문자
 create or replace function public.lv_norm(t text) returns text
-language sql immutable as $$ select lower(regexp_replace(coalesce(t,''), '\s+', '', 'g')) $$;
+language sql immutable set search_path = public as $$ select lower(regexp_replace(coalesce(t,''), '\s+', '', 'g')) $$;
 
 create or replace function public.lv_has_blocked(t text) returns boolean
 language sql stable security definer set search_path = public as $$
@@ -136,7 +136,7 @@ begin
 end $$;
 
 create or replace function public.lv_cid_ok(p_cid text) returns boolean
-language sql immutable as $$ select coalesce(p_cid ~ '^[A-Za-z0-9_-]{8,64}$', false) $$;
+language sql immutable set search_path = public as $$ select coalesce(p_cid ~ '^[A-Za-z0-9_-]{8,64}$', false) $$;
 
 -- ───────── 학생 · 덱이 부르는 함수 (익명 가능) ─────────
 -- 방 상태 + 지금 열린 질문
@@ -175,7 +175,9 @@ begin
     select coalesce(jsonb_agg(jsonb_build_object('w', disp, 'n', cnt, 'k', norm)
                     order by cnt desc, first_at), '[]'::jsonb) into res
     from (select r.norm, count(*) cnt, min(r.created_at) first_at,
-                 mode() within group (order by r.value) disp
+                 (select r2.value from public.lv_responses r2
+                   where r2.question_id = p_qid and r2.norm = r.norm
+                   group by r2.value order by count(*) desc, min(r2.created_at) limit 1) disp
           from public.lv_responses r
           where r.question_id = p_qid and not r.hidden and not r.blocked
             and not exists (select 1 from public.lv_hidden_terms h

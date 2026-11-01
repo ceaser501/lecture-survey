@@ -251,35 +251,51 @@
   /* ───────── 결과 그리기 ───────── */
   function pct(n, total) { return total ? Math.round(n * 100 / total) : 0; }
 
-  function renderChoice(body, res) {
+  // 객관식: 선택지가 적고 짧으면 세로 막대(발표용 설문 도구에서 흔한 모양), 많거나 길면 가로 막대
+  function renderChoice(body, res, o) {
+    o = o || {};
     var opts = res.options || [], counts = res.data || [], total = 0, max = 0;
     counts.forEach(function (c) { total += c; if (c > max) max = c; });
     if (res.multi) total = res.n || 0; // 복수 선택: 응답한 사람 중 몇 %가 골랐나
-    var sig = res.id + '|' + JSON.stringify(opts) + (res.multi ? '|m' : '');
-    var wrap = body.querySelector('.lv-bars');
+    var longest = opts.reduce(function (m, x) { return Math.max(m, String(x).length); }, 0);
+    var cols = !o.compact && opts.length <= 5 && longest <= 16;
+    var sig = res.id + '|' + JSON.stringify(opts) + (res.multi ? '|m' : '') + (cols ? '|c' : '|b');
+    var wrap = body.querySelector('.lv-choice');
     if (!wrap || wrap.getAttribute('data-sig') !== sig) {
       body.innerHTML = '';
-      wrap = h('div', 'lv-bars lv-n' + opts.length);
-      if (res.multi) wrap.appendChild(h('div', 'lv-multi', '복수 선택 · 응답자 중 고른 비율'));
+      wrap = h('div', 'lv-choice ' + (cols ? 'lv-cols' : 'lv-bars') + ' lv-n' + opts.length);
       wrap.setAttribute('data-sig', sig);
-      opts.forEach(function (o) {
-        var b = h('div', 'lv-bar', '<div class="lv-bar-row"><span class="lv-bar-t">' + esc(o) +
-          '</span><span class="lv-bar-p"><span class="lv-v">0</span><small>%</small><span class="lv-bar-n"></span></span></div>' +
-          '<div class="lv-bar-track"><div class="lv-bar-fill"></div></div>');
-        wrap.appendChild(b);
+      if (res.multi) wrap.appendChild(h('div', 'lv-multi', '복수 선택 · 응답자 중 고른 비율'));
+      var row = cols ? h('div', 'lv-cols-row') : wrap;
+      opts.forEach(function (x) {
+        var el = cols
+          ? h('div', 'lv-col', '<div class="lv-col-track"><div class="lv-col-p"><span class="lv-v">0</span><small>%</small></div>' +
+              '<div class="lv-col-n"></div><div class="lv-col-fill"></div></div><div class="lv-col-t">' + esc(x) + '</div>')
+          : h('div', 'lv-bar', '<div class="lv-bar-row"><span class="lv-bar-t">' + esc(x) +
+              '</span><span class="lv-bar-p"><span class="lv-v">0</span><small>%</small><span class="lv-bar-n"></span></span></div>' +
+              '<div class="lv-bar-track"><div class="lv-bar-fill"></div></div>');
+        row.appendChild(el);
       });
+      if (cols) wrap.appendChild(row);
       body.appendChild(wrap);
-      wrap.offsetWidth; // 0%에서 자라도록
+      wrap.offsetWidth; // 0에서 자라도록
     }
-    Array.prototype.forEach.call(wrap.querySelectorAll('.lv-bar'), function (b, i) {
+    Array.prototype.forEach.call(wrap.querySelectorAll(cols ? '.lv-col' : '.lv-bar'), function (el, i) {
       var c = counts[i] || 0, p = pct(c, total);
-      b.classList.toggle('lv-top', max > 0 && c === max);
-      b.querySelector('.lv-v').textContent = p;
-      b.querySelector('.lv-bar-n').textContent = c + '명';
-      b.querySelector('.lv-bar-fill').style.width = p + '%';
+      el.classList.toggle('lv-top', max > 0 && c === max);
+      el.querySelector('.lv-v').textContent = p;
+      if (cols) {
+        el.querySelector('.lv-col-n').textContent = c + '명';
+        // 가장 많은 선택지가 칸을 꽉 채우고 나머지는 그에 비례 (0명이어도 얇게 보이게)
+        el.querySelector('.lv-col-fill').style.height = (max ? Math.max(c / max * 100, 1.5) : 1.5) + '%';
+      } else {
+        el.querySelector('.lv-bar-n').textContent = c + '명';
+        el.querySelector('.lv-bar-fill').style.width = p + '%';
+      }
     });
   }
 
+  // 주관식: 말풍선 카드를 칸에 맞춰 가지런히. 답이 적을수록 크게, 가장 최근 답은 주황 테두리
   function renderText(body, res, o) {
     var items = (res.data || []).slice(0, o.compact ? 30 : 40);
     if (!items.length) { body.innerHTML = '<div class="lv-msg">아직 답변이 없어요</div>'; return; }
@@ -288,12 +304,17 @@
       body.innerHTML = ''; wrap = h('div', 'lv-cards'); wrap.setAttribute('data-q', res.id); body.appendChild(wrap);
       wrap._first = true;
     }
+    var n = items.length;
+    wrap.className = 'lv-cards ' + (n <= 4 ? 'lv-s1' : n <= 9 ? 'lv-s2' : n <= 16 ? 'lv-s3' : 'lv-s4');
     var have = {};
     Array.prototype.forEach.call(wrap.children, function (c) { have[c.getAttribute('data-id') + '|' + c.textContent] = c; });
     var frag = document.createDocumentFragment();
     items.forEach(function (it) {
       var k = it.id + '|' + it.v, el = have[k];
-      if (!el) { el = h('div', 'lv-card' + (wrap._first ? '' : ' lv-new')); el.setAttribute('data-id', it.id); el.textContent = it.v; }
+      if (!el) {
+        el = h('div', 'lv-card' + (wrap._first ? '' : ' lv-new'), '<span class="lv-ct"></span>');
+        el.setAttribute('data-id', it.id); el.firstChild.textContent = it.v;
+      }
       frag.appendChild(el);
     });
     wrap.innerHTML = ''; wrap.appendChild(frag); wrap._first = false;

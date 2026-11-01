@@ -1,0 +1,115 @@
+/* ── 라이브 참여 결과 위젯 (덱 장표용) ───────────────────────────
+   모든 클래스는 lv- 로 시작한다. 덱 색 토큰(--bg, --ink …)이 있으면 그대로 쓰고,
+   없으면 아래 기본값을 쓴다. 1600×900 기준 화면에 맞춘 크기. */
+.lv-box{
+  --lv-bg:var(--bg,#000);--lv-card:var(--card,#1C1C1E);--lv-card2:var(--card2,#2C2C2E);
+  --lv-ink:var(--ink,#F5F5F7);--lv-sub:var(--sub,#A1A1A6);--lv-mute:var(--mute,#6E6E73);--lv-acc:var(--acc,#FF9F0A);
+  position:relative;width:100%;height:560px;color:var(--lv-ink);
+  font-family:Pretendard,"Pretendard Variable","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  letter-spacing:-.01em;box-sizing:border-box;text-align:left
+}
+.lv-box *,.lv-pop *{box-sizing:border-box}
+.lv-w{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;width:100%;height:100%}
+.lv-w.lv-noside{grid-template-columns:minmax(0,1fr)}
+.lv-main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.lv-prompt{font-size:34px;font-weight:700;line-height:1.3;margin:0 0 22px;color:var(--lv-ink);word-break:keep-all}
+.lv-prompt:empty{display:none}
+.lv-body{position:relative;flex:1;min-height:0}
+.lv-side{display:flex;flex-direction:column;align-items:center;gap:10px;width:170px}
+.lv-qr{width:150px;height:150px;background:#fff;border-radius:14px;padding:4px}
+.lv-qr svg{display:block;width:100%;height:100%}
+.lv-url{font-size:15px;line-height:1.4;color:var(--lv-sub);text-align:center;white-space:nowrap}
+.lv-url b{color:var(--lv-ink);font-weight:700}
+.lv-count{text-align:center;margin-top:10px}
+.lv-count b{display:block;font-size:52px;font-weight:800;line-height:1;color:var(--lv-ink);font-variant-numeric:tabular-nums}
+.lv-count span{font-size:17px;color:var(--lv-sub)}
+.lv-state{font-size:15px;color:var(--lv-mute);text-align:center}
+.lv-state.lv-on{color:var(--lv-acc)}
+.lv-state.lv-on::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--lv-acc);margin-right:6px;vertical-align:2px;animation:lv-blink 1.6s infinite}
+@keyframes lv-blink{50%{opacity:.25}}
+.lv-foot{position:absolute;right:0;bottom:-34px;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--lv-mute)}
+.lv-net{display:none}
+.lv-box.lv-off .lv-net{display:inline}
+.lv-key{all:unset;cursor:pointer;font:inherit;font-size:13px;color:var(--lv-mute);opacity:.35;padding:2px 4px}
+.lv-key:hover{opacity:1}
+.lv-key.lv-in{opacity:.6}
+.lv-key.lv-in::before{content:"● ";color:var(--lv-acc)}
+.lv-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:24px;color:var(--lv-sub);line-height:1.5;word-break:keep-all;padding:0 20px}
+.lv-msg code{font-family:inherit;color:var(--lv-acc);font-weight:700}
+.lv-msg.lv-small{font-size:18px;color:var(--lv-mute)}
+
+/* 객관식 막대 */
+.lv-bars{display:flex;flex-direction:column;justify-content:center;gap:22px;height:100%}
+.lv-bar-row{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:10px}
+.lv-bar-t{font-size:28px;font-weight:600;line-height:1.25;color:var(--lv-ink);word-break:keep-all}
+.lv-bar-p{font-size:44px;font-weight:800;line-height:1;color:var(--lv-sub);white-space:nowrap;font-variant-numeric:tabular-nums}
+.lv-bar-p small{font-size:24px;font-weight:700;margin-left:2px}
+.lv-bar-n{font-size:18px;font-weight:500;color:var(--lv-mute);margin-left:12px}
+.lv-bar-track{height:22px;border-radius:11px;background:var(--lv-card2);overflow:hidden}
+.lv-bar-fill{height:100%;width:0;border-radius:11px;background:var(--lv-mute);transition:width .7s cubic-bezier(.2,.8,.2,1),background .3s}
+.lv-bar.lv-top .lv-bar-fill{background:var(--lv-acc)}
+.lv-bar.lv-top .lv-bar-p{color:var(--lv-acc)}
+.lv-bars.lv-n5 .lv-bar-t,.lv-bars.lv-n6 .lv-bar-t{font-size:24px}
+.lv-bars.lv-n5 .lv-bar-p,.lv-bars.lv-n6 .lv-bar-p{font-size:38px}
+.lv-bars.lv-n5,.lv-bars.lv-n6{gap:14px}
+.lv-bars.lv-n5 .lv-bar-track,.lv-bars.lv-n6 .lv-bar-track{height:16px}
+
+/* 주관식 카드 벽 */
+.lv-cards{column-width:330px;column-gap:18px;height:100%;overflow:hidden}
+.lv-card{break-inside:avoid;display:inline-block;width:100%;margin:0 0 18px;padding:20px 24px;border-radius:18px;
+  background:var(--lv-card);font-size:24px;line-height:1.45;font-weight:500;color:var(--lv-ink);word-break:keep-all;overflow-wrap:anywhere}
+.lv-card.lv-new{animation:lv-in .5s cubic-bezier(.2,.8,.2,1)}
+.lv-card:first-child{box-shadow:inset 0 0 0 2px var(--lv-acc)}
+@keyframes lv-in{from{opacity:0;transform:translateY(14px) scale(.97)}}
+
+/* 워드클라우드 */
+.lv-cloud{position:absolute;inset:0;overflow:hidden}
+.lv-word{position:absolute;white-space:nowrap;font-weight:800;line-height:1;color:var(--lv-sub);
+  transition:left .6s cubic-bezier(.2,.8,.2,1),top .6s cubic-bezier(.2,.8,.2,1),font-size .6s,opacity .4s,color .3s;
+  transform:translate(-50%,-50%)}
+.lv-word.lv-r1{color:var(--lv-ink)}
+.lv-word.lv-hot{color:var(--lv-acc)}
+.lv-word.lv-new{animation:lv-fade .6s}
+@keyframes lv-fade{from{opacity:0}}
+
+/* Q&A */
+.lv-qa{display:flex;flex-direction:column;gap:14px;height:100%;overflow:hidden}
+.lv-qa-i{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:24px;width:100%;padding:20px 26px;border-radius:18px;
+  background:var(--lv-card);cursor:pointer;font-family:inherit;color:var(--lv-ink)}
+.lv-qa-b{flex:1;font-size:26px;line-height:1.4;font-weight:500;word-break:keep-all;overflow-wrap:anywhere}
+.lv-qa-l{flex:none;font-size:18px;color:var(--lv-sub);text-align:right;white-space:nowrap}
+.lv-qa-l b{display:block;font-size:40px;font-weight:800;line-height:1;color:var(--lv-ink);font-variant-numeric:tabular-nums}
+.lv-qa-i:first-child{padding:28px 30px}
+.lv-qa-i:first-child .lv-qa-b{font-size:38px;font-weight:700;line-height:1.35}
+.lv-qa-i:first-child .lv-qa-l b{color:var(--lv-acc)}
+.lv-qa-i.lv-done{opacity:.38;padding:14px 26px}
+.lv-qa-i.lv-done .lv-qa-b{font-size:22px;font-weight:500}
+.lv-qa-i.lv-done .lv-qa-l b{font-size:22px;color:var(--lv-sub)}
+.lv-qa-i.lv-new{animation:lv-in .5s}
+
+/* 작은 화면용 (학생 폰 · 관리 화면 미리보기) */
+.lv-compact{height:auto}
+.lv-compact .lv-bars{gap:14px}
+.lv-compact .lv-bar-row{margin-bottom:6px}
+.lv-compact .lv-bar-t{font-size:17px}
+.lv-compact .lv-bar-p{font-size:22px}
+.lv-compact .lv-bar-p small{font-size:14px}
+.lv-compact .lv-bar-n{font-size:13px}
+.lv-compact .lv-bar-track{height:10px}
+.lv-compact .lv-cards{column-width:200px;column-gap:10px;height:auto;max-height:420px}
+.lv-compact .lv-card{font-size:16px;padding:12px 14px;margin-bottom:10px;border-radius:12px}
+
+/* 강사 로그인 (덱 위에 뜨는 작은 창) */
+.lv-pop{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);
+  font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+.lv-pop form{width:360px;padding:28px;border-radius:20px;background:#1C1C1E;color:#F5F5F7;display:flex;flex-direction:column;gap:12px}
+.lv-pop h3{margin:0 0 4px;font-size:20px}
+.lv-pop p{margin:0;font-size:14px;color:#A1A1A6;line-height:1.5}
+.lv-pop input{font:inherit;font-size:16px;padding:12px 14px;border-radius:10px;border:1px solid #3A3A3C;background:#000;color:#F5F5F7}
+.lv-pop .lv-row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+.lv-pop button{font:inherit;font-size:15px;font-weight:600;padding:11px 18px;border-radius:10px;border:0;cursor:pointer;background:#2C2C2E;color:#F5F5F7}
+.lv-pop button.lv-go{background:#FF9F0A;color:#000}
+.lv-pop .lv-err{color:#FF9F0A;font-size:14px;min-height:1em}
+.lv-toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);z-index:2147483001;padding:12px 20px;border-radius:12px;
+  background:#2C2C2E;color:#F5F5F7;font:500 16px Pretendard,system-ui,sans-serif;pointer-events:none;animation:lv-fade .3s}

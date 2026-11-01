@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="robots" content="noindex">
+<title>라이브 참여 · 관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="lv-widget.css">
+<style>
+:root{--bg:#000;--card:#1C1C1E;--card2:#2C2C2E;--ink:#F5F5F7;--sub:#A1A1A6;--mute:#6E6E73;--acc:#FF9F0A;--line:#3A3A3C}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;font-size:16px;line-height:1.5;letter-spacing:-.01em}
+button,input,textarea,select{font:inherit;color:inherit}
+a{color:var(--acc)}
+.top{position:sticky;top:0;z-index:20;background:rgba(0,0,0,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--card2);
+  padding:calc(10px + env(safe-area-inset-top)) 16px 0}
+.top-row{display:flex;align-items:center;gap:10px;max-width:1100px;margin:0 auto}
+.brand{font-weight:800;font-size:17px;margin-right:auto}
+.rooms{display:flex;gap:6px}
+.rooms button{border:0;border-radius:10px;padding:8px 14px;background:var(--card2);color:var(--sub);font-weight:700;cursor:pointer}
+.rooms button.on{background:var(--ink);color:#000}
+.tabs{display:flex;gap:4px;max-width:1100px;margin:8px auto 0;overflow-x:auto}
+.tabs button{position:relative;border:0;background:none;padding:10px 14px 12px;font-weight:700;color:var(--mute);cursor:pointer;white-space:nowrap}
+.tabs button.on{color:var(--ink)}
+.tabs button.on::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:3px;border-radius:2px;background:var(--acc)}
+.tabs .n{display:inline-block;min-width:20px;margin-left:4px;padding:0 6px;border-radius:10px;background:var(--acc);color:#000;font-size:12px;line-height:20px;text-align:center}
+.tabs .n:empty{display:none}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 80px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 16px;border-radius:12px;border:0;
+  background:var(--card2);color:var(--ink);font-weight:600;cursor:pointer;white-space:nowrap}
+.btn.pri{background:var(--acc);color:#000}
+.btn.sm{min-height:34px;padding:0 11px;border-radius:9px;font-size:14px}
+.btn.lg{min-height:52px;font-size:17px;padding:0 22px}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.line{background:none;box-shadow:inset 0 0 0 1px var(--line)}
+.card{background:var(--card);border-radius:18px;padding:18px}
+.muted{color:var(--sub)}
+.small{font-size:13px;color:var(--mute)}
+h2{font-size:15px;color:var(--sub);font-weight:600;margin:28px 0 12px}
+h2:first-child{margin-top:0}
+.live{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.live .lt{flex:1;min-width:220px}
+.live .lk{font-size:13px;color:var(--acc);font-weight:700}
+.live .lk.off{color:var(--mute)}
+.live .lp{font-size:20px;font-weight:700;line-height:1.35;margin-top:2px;word-break:keep-all}
+.live .ln{font-size:14px;color:var(--sub);margin-top:4px}
+.qs{display:flex;flex-direction:column;gap:10px}
+.qi{display:grid;grid-template-columns:1fr auto;gap:10px 16px;align-items:center;background:var(--card);border-radius:16px;padding:14px 16px;border:2px solid transparent}
+.qi.open{border-color:var(--acc)}
+.qi .qt{font-size:13px;color:var(--sub)}
+.qi .qt b{color:var(--ink);font-weight:600}
+.qi .qt .key{color:var(--acc);font-weight:700}
+.qi .qp{font-size:17px;font-weight:600;line-height:1.4;word-break:keep-all;margin-top:2px}
+.qi .qa{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.qi .qx{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.empty{padding:36px 10px;text-align:center;color:var(--sub);background:var(--card);border-radius:16px;line-height:1.7}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.toolbar .sp{flex:1}
+label.f{display:block;margin:0 0 16px}
+label.f>span{display:block;font-size:14px;color:var(--sub);margin-bottom:6px}
+input[type=text],input[type=email],input[type=password],textarea,select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#000;outline:none;font-size:16px}
+input:focus,textarea:focus{border-color:var(--sub)}
+textarea{resize:vertical;min-height:70px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:90px;border:1px solid var(--line);background:none;border-radius:12px;padding:11px 8px;font-weight:700;cursor:pointer;color:var(--sub)}
+.seg button.on{border-color:var(--acc);color:var(--acc)}
+.optrow{display:flex;gap:8px;margin-bottom:8px}
+.optrow input{flex:1}
+.check{display:flex;align-items:center;gap:10px;margin:0 0 12px;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--acc)}
+.sheet{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px}
+.sheet[hidden]{display:none}
+.sheet .in{width:100%;max-width:1060px;background:#111;border-radius:22px;padding:22px;border:1px solid var(--card2)}
+.sheet h3{margin:0 0 18px;font-size:20px}
+.ed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:24px}
+.pv h4{margin:0 0 8px;font-size:13px;color:var(--sub);font-weight:600}
+.phone{width:300px;height:540px;border-radius:30px;border:8px solid #222;overflow:hidden;background:#000;margin-bottom:18px}
+.phone iframe{width:375px;height:675px;border:0;transform:scale(.8);transform-origin:0 0}
+.slide16{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--card2)}
+.slide16 .sc{position:absolute;left:0;top:0;width:1600px;height:900px;transform-origin:0 0;padding:70px 90px}
+.slide16 .sk{font-size:24px;color:var(--acc);font-weight:700}
+.slide16 .sh{font-size:52px;font-weight:800;margin:6px 0 34px;line-height:1.2}
+.slide16 .lv-box{height:560px}
+.pvrow{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid var(--card2)}
+.foot .sp{flex:1}
+.msg{font-size:14px;color:var(--acc);min-height:20px}
+.list{display:flex;flex-direction:column;gap:8px}
+.li{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:14px;padding:12px 14px}
+.li .tx{flex:1;word-break:keep-all;overflow-wrap:anywhere;line-height:1.45}
+.li .tx .small{display:block;margin-top:2px}
+.li.dim .tx{opacity:.45}
+.li .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.flag{color:var(--acc);font-weight:700;font-size:13px}
+.words{display:flex;flex-wrap:wrap;gap:8px}
+.wchip{display:inline-flex;align-items:center;gap:8px;padding:6px 6px 6px 12px;border-radius:999px;background:var(--card2)}
+.wchip.off{opacity:.45;text-decoration:line-through}
+.wchip b{font-size:13px;color:var(--sub)}
+.wchip button{border:0;border-radius:999px;padding:4px 10px;background:#000;color:var(--ink);font-size:13px;cursor:pointer}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.qrbox{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.qrbox .q{width:150px;height:150px;background:#fff;border-radius:12px;padding:4px}
+.qrbox .q svg{width:100%;height:100%;display:block}
+.login{max-width:380px;margin:12vh auto;padding:0 16px}
+.login h1{font-size:24px;margin:0 0 6px}
+.login p{color:var(--sub);margin:0 0 22px}
+.err{color:var(--acc);min-height:22px;font-size:14px;margin-top:6px}
+.sw{position:relative;display:inline-block;width:50px;height:30px;flex:none}
+.sw input{opacity:0;width:0;height:0}
+.sw span{position:absolute;inset:0;border-radius:15px;background:var(--card2);transition:.2s;cursor:pointer}
+.sw span::before{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+span{background:var(--acc)}
+.sw input:checked+span::before{transform:translateX(20px)}
+.setrow{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--card2)}
+.setrow:last-child{border-bottom:0}
+.setrow .tx{flex:1}
+.blk{display:flex;flex-wrap:wrap;gap:6px}
+.blk span{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 12px;border-radius:999px;background:var(--card2);font-size:14px}
+.blk button{border:0;background:#000;color:var(--sub);border-radius:999px;width:24px;height:24px;cursor:pointer}
+.netbar{display:none;max-width:1100px;margin:10px auto 0;padding:10px 14px;border-radius:12px;background:var(--card2);font-size:14px}
+.netbar.on{display:block}
+@media (max-width:820px){
+  .ed{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr}
+  .qi{grid-template-columns:1fr}
+  .qi .qa{justify-content:flex-start}
+  .phone{margin:0 auto 18px}
+  .brand{font-size:15px}
+  .rooms button{padding:8px 11px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>window.LV_CONFIG = { manual: true };</script>
+<script src="lv-widget.js"></script>
+<script>
+(function () {
+  'use strict';
+  var LV = window.LV, esc = LV.esc, app = document.getElementById('app');
+  var TYPE = { choice: '객관식', text: '주관식', wordcloud: '워드클라우드' };
+  var EX = { choice: '예: AGI, 몇 년 뒤에 올까요?', text: '예: 회사가 나를 뽑아야 하는 이유, 한 문장', wordcloud: '예: AI 하면 떠오르는 단어 하나' };
+  var S = { rooms: [], room: null, tab: 'q', questions: [], counts: {}, qa: [], blocked: [], edit: null, view: null };
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  function api(path, opt) { return LV.call('/rest/v1/' + path, opt, true); }
+  function rpcA(name, args) { return LV.rpc(name, args, true); }
+  function fail(e) {
+    if (e && e.code === 'auth') { LV.auth.save(null); loginView('로그인이 풀렸어요. 다시 로그인해 주세요'); return; }
+    LV.toast(e && e.code === 'net' ? '인터넷 연결을 확인해 주세요' : '실패했어요: ' + (e && e.message || ''));
+  }
+
+  /* ───────── 로그인 ───────── */
+  function loginView(msg) {
+    app.innerHTML = '<form class="login" id="lf"><h1>라이브 참여 · 관리</h1><p>강사 계정으로 로그인하세요</p>' +
+      '<label class="f"><span>이메일</span><input type="email" name="e" autocomplete="username" required></label>' +
+      '<label class="f"><span>비밀번호</span><input type="password" name="p" autocomplete="current-password" required></label>' +
+      '<button class="btn pri lg" style="width:100%">로그인</button><div class="err" id="le">' + esc(msg || '') + '</div></form>';
+    $('#lf').onsubmit = function (e) {
+      e.preventDefault();
+      var f = e.target; $('#le').textContent = '';
+      f.querySelector('button').disabled = true;
+      LV.auth.login(f.e.value.trim(), f.p.value).then(start, function (err) {
+        f.querySelector('button').disabled = false;
+        $('#le').textContent = err.code === 'net' ? '인터넷 연결을 확인해 주세요' : /invalid/i.test(err.message) ? '이메일 또는 비밀번호가 맞지 않아요' : err.message;
+      });
+    };
+  }
+
+  /* ───────── 뼈대 ───────── */
+  function shell() {
+    app.innerHTML = '<div class="top"><div class="top-row"><div class="brand">라이브 참여</div><div class="rooms" id="rooms"></div>' +
+      '<button class="btn sm line" id="out">로그아웃</button></div>' +
+      '<div class="tabs" id="tabs"><button data-t="q">질문</button><button data-t="qa">Q&amp;A<span class="n" id="qan"></span></button>' +
+      '<button data-t="set">설정 · 데이터</button></div><div class="netbar" id="netbar">연결이 끊겼어요. 다시 연결 중…</div></div>' +
+      '<div class="wrap" id="main"></div>' +
+      '<div class="sheet" id="sheet" hidden><div class="in" id="sheet-in"></div></div>';
+    $('#out').onclick = function () { if (confirm('로그아웃할까요?')) { LV.auth.logout(); location.reload(); } };
+    $$('#tabs button').forEach(function (b) { b.onclick = function () { S.tab = b.getAttribute('data-t'); S.view = null; render(); }; });
+    var offT;
+    LV.onNet(function (n) {
+      clearTimeout(offT);
+      if (n.rest) $('#netbar').classList.remove('on');
+      else offT = setTimeout(function () { $('#netbar').classList.toggle('on', !LV.net.rest); }, 2000);
+    });
+  }
+  function drawRooms() {
+    $('#rooms').innerHTML = S.rooms.map(function (r) {
+      return '<button data-r="' + esc(r.id) + '" class="' + (S.room && r.id === S.room.id ? 'on' : '') + '">' + esc(r.id) + '</button>';
+    }).join('');
+    $$('#rooms button').forEach(function (b) { b.onclick = function () { pickRoom(b.getAttribute('data-r')); }; });
+    $$('#tabs button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-t') === S.tab); });
+  }
+
+  var unsub = null;
+  function pickRoom(id) {
+    S.room = S.rooms.filter(function (r) { return r.id === id; })[0] || S.rooms[0];
+    try { localStorage.setItem('lv-admin-room', S.room.id); } catch (e) {}
+    S.view = null;
+    if (unsub) unsub();
+    unsub = LV.rt.sub(S.room.id, function (m) {
+      if (m.t === 'qa') reloadSoon('qa');
+      else if (m.t === 'r') reloadSoon('r', m.q);
+      else reloadSoon('all');
+    });
+    loadAll();
+  }
+
+  /* ───────── 데이터 읽기 ───────── */
+  function loadRooms() { return api('lv_rooms?select=*&order=id').then(function (r) { S.rooms = r || []; }); }
+  function loadQuestions() {
+    return api('lv_questions?select=*&room_id=eq.' + S.room.id + '&order=sort,created_at').then(function (q) { S.questions = q || []; });
+  }
+  function loadCounts() {
+    var ids = S.questions.map(function (q) { return q.id; });
+    if (!ids.length) { S.counts = {}; return Promise.resolve(); }
+    return api('lv_responses?select=question_id,client_id&question_id=in.(' + ids.join(',') + ')').then(function (rows) {
+      var m = {};
+      (rows || []).forEach(function (r) { (m[r.question_id] = m[r.question_id] || {})[r.client_id] = 1; });
+      S.counts = {};
+      Object.keys(m).forEach(function (k) { S.counts[k] = Object.keys(m[k]).length; });
+    });
+  }
+  function loadQA() { return api('lv_qa?select=*&room_id=eq.' + S.room.id + '&order=created_at.desc').then(function (r) { S.qa = r || []; }); }
+  function loadBlocked() { return api('lv_blocked_words?select=word&order=word').then(function (r) { S.blocked = (r || []).map(function (x) { return x.word; }); }); }
+  function loadAll() {
+    return Promise.all([loadRooms(), loadQuestions().then(loadCounts), loadQA()]).then(function () {
+      S.room = S.rooms.filter(function (r) { return r.id === S.room.id; })[0] || S.room;
+      render();
+    }, fail);
+  }
+  var pend = {}, pendT = null;
+  function reloadSoon(kind, q) {
+    pend[kind] = true; if (q) pend.q = q;
+    clearTimeout(pendT);
+    pendT = setTimeout(function () {
+      var p = pend; pend = {};
+      var jobs = [];
+      if (p.all) jobs.push(loadRooms(), loadQuestions().then(loadCounts), loadQA());
+      else { if (p.r) jobs.push(loadCounts()); if (p.qa) jobs.push(loadQA()); }
+      Promise.all(jobs).then(function () {
+        S.room = S.rooms.filter(function (r) { return r.id === S.room.id; })[0] || S.room;
+        if (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName) && !$('#sheet').hidden) return;
+        if (S.view && S.view.type === 'results' && (p.r || p.all)) return openResults(S.view.id, true);
+        render();
+      }, function () {});
+    }, 500);
+  }
+
+  /* ───────── 화면 ───────── */
+  function render() {
+    drawRooms();
+    var pending = S.qa.filter(function (a) { return a.status === 'pending'; }).length;
+    $('#qan').textContent = pending || '';
+    if (S.view && S.view.type === 'results') return;
+    if (S.tab === 'q') renderQuestions();
+    else if (S.tab === 'qa') renderQA();
+    else renderSettings();
+  }
+
+  function activeQ() {
+    var id = S.room && S.room.active_question_id;
+    return S.questions.filter(function (q) { return q.id === id; })[0] || null;
+  }
+
+  function renderQuestions() {
+    var a = activeQ(), main = $('#main');
+    var html = '<h2>지금 열린 질문</h2><div class="card live">';
+    if (a) html += '<div class="lt"><div class="lk">● ' + TYPE[a.type] + ' · 받는 중</div><div class="lp">' + esc(a.prompt) + '</div><div class="ln">' + (S.counts[a.id] || 0) + '명 참여</div></div>' +
+      '<button class="btn sm" data-res="' + a.id + '">결과 보기</button><button class="btn lg" id="close">닫기</button>';
+    else html += '<div class="lt"><div class="lk off">닫힘</div><div class="lp muted">학생 화면: 「강사가 질문을 열면 여기에 나타납니다」</div></div>';
+    html += '</div>';
+    html += '<h2 style="display:flex;align-items:center">질문 ' + S.questions.length + '개<span style="flex:1"></span><button class="btn pri" id="new">+ 새 질문</button></h2>';
+    if (!S.questions.length) html += '<div class="empty">아직 질문이 없어요.<br>「+ 새 질문」으로 만들고, 장표와 이어 쓰려면 <b>장표 연결 키</b>를 붙이세요.</div>';
+    html += '<div class="qs">';
+    S.questions.forEach(function (q, i) {
+      var open = a && a.id === q.id;
+      html += '<div class="qi' + (open ? ' open' : '') + '"><div><div class="qt"><b>' + TYPE[q.type] + '</b>' + (q.key ? ' · 키 <span class="key">' + esc(q.key) + '</span>' : ' · 키 없음') +
+        ' · ' + (S.counts[q.id] || 0) + '명' + (open ? ' · <span class="key">받는 중</span>' : '') + '</div><div class="qp">' + esc(q.prompt) + '</div></div>' +
+        '<div class="qa">' + (open ? '<button class="btn" data-close="1">닫기</button>' : '<button class="btn pri" data-open="' + q.id + '">열기</button>') +
+        '<button class="btn" data-res="' + q.id + '">결과</button></div>' +
+        '<div class="qx"><button class="btn sm line" data-edit="' + q.id + '">수정</button><button class="btn sm line" data-dup="' + q.id + '">복제</button>' +
+        '<button class="btn sm line" data-up="' + i + '"' + (i ? '' : ' disabled') + '>↑</button><button class="btn sm line" data-down="' + i + '"' + (i < S.questions.length - 1 ? '' : ' disabled') + '>↓</button>' +
+        '<button class="btn sm line" data-reset="' + q.id + '">결과 초기화</button><button class="btn sm line" data-del="' + q.id + '">삭제</button></div></div>';
+    });
+    html += '</div>';
+    main.innerHTML = html;
+    if ($('#close')) $('#close').onclick = function () { openQ(null); };
+    $('#new').onclick = function () { editor(null); };
+    $$('[data-close]', main).forEach(function (b) { b.onclick = function () { openQ(null); }; });
+    $$('[data-open]', main).forEach(function (b) { b.onclick = function () { openQ(b.getAttribute('data-open')); }; });
+    $$('[data-res]', main).forEach(function (b) { b.onclick = function () { openResults(b.getAttribute('data-res')); }; });
+    $$('[data-edit]', main).forEach(function (b) { b.onclick = function () { editor(findQ(b.getAttribute('data-edit'))); }; });
+    $$('[data-dup]', main).forEach(function (b) { b.onclick = function () { dupQ(findQ(b.getAttribute('data-dup'))); }; });
+    $$('[data-up]', main).forEach(function (b) { b.onclick = function () { moveQ(+b.getAttribute('data-up'), -1); }; });
+    $$('[data-down]', main).forEach(function (b) { b.onclick = function () { moveQ(+b.getAttribute('data-down'), 1); }; });
+    $$('[data-reset]', main).forEach(function (b) { b.onclick = function () { resetQ(findQ(b.getAttribute('data-reset'))); }; });
+    $$('[data-del]', main).forEach(function (b) { b.onclick = function () { delQ(findQ(b.getAttribute('data-del'))); }; });
+  }
+  function findQ(id) { return S.questions.filter(function (q) { return q.id === id; })[0]; }
+
+  /* ───────── 질문 동작 ───────── */
+  function openQ(id) {
+    return rpcA('lv_admin_open', { p_room: S.room.id, p_qid: id }).then(function () {
+      S.room.active_question_id = id; render(); LV.toast(id ? '질문을 열었어요' : '질문을 닫았어요');
+    }, fail);
+  }
+  function nextSort() { return S.questions.reduce(function (m, q) { return Math.max(m, q.sort); }, 0) + 1; }
+  function dupQ(q) {
+    api('lv_questions', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: {
+      room_id: q.room_id, type: q.type, prompt: q.prompt, options: q.options, allow_change: q.allow_change,
+      show_results: q.show_results, sort: nextSort(), key: null } }).then(function () { LV.toast('복제했어요 (키는 비워 둠)'); return loadAll(); }, fail);
+  }
+  function moveQ(i, d) {
+    var list = S.questions.slice(), j = i + d;
+    if (j < 0 || j >= list.length) return;
+    var t = list[i]; list[i] = list[j]; list[j] = t;
+    S.questions = list; render();
+    Promise.all(list.map(function (q, k) {
+      if (q.sort === k + 1) return null;
+      q.sort = k + 1;
+      return api('lv_questions?id=eq.' + q.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: { sort: k + 1 } });
+    })).catch(fail);
+  }
+  function resetQ(q) {
+    if (!confirm('「' + q.prompt + '」의 응답 ' + (S.counts[q.id] || 0) + '명분을 모두 지울까요?')) return;
+    Promise.all([api('lv_responses?question_id=eq.' + q.id, { method: 'DELETE' }), api('lv_hidden_terms?question_id=eq.' + q.id, { method: 'DELETE' })])
+      .then(function () { LV.toast('초기화했어요'); return loadAll(); }, fail);
+  }
+  function delQ(q) {
+    if (!confirm('「' + q.prompt + '」 질문과 응답을 삭제할까요?')) return;
+    api('lv_questions?id=eq.' + q.id, { method: 'DELETE' }).then(function () { LV.toast('삭제했어요'); return loadAll(); }, fail);
+  }
+
+  /* ───────── 질문 만들기 · 수정 (미리보기 포함) ───────── */
+  function editor(q) {
+    var isNew = !q;
+    var d = q ? JSON.parse(JSON.stringify(q)) : { type: 'wordcloud', prompt: '', options: ['', ''], key: '', allow_change: true, show_results: false };
+    if (d.type !== 'choice' && (!d.options || d.options.length < 2)) d.options = ['', ''];
+    S.edit = d;
+    var sh = $('#sheet'), inn = $('#sheet-in');
+    inn.innerHTML = '<h3>' + (isNew ? '새 질문' : '질문 수정') + ' · ' + esc(S.room.id) + '</h3><div class="ed"><div>' +
+      '<label class="f"><span>유형</span><div class="seg" id="e-type"><button data-v="choice">객관식</button><button data-v="text">주관식</button><button data-v="wordcloud">워드클라우드</button></div></label>' +
+      '<label class="f"><span>질문 문구</span><textarea id="e-prompt" maxlength="200" rows="2"></textarea></label>' +
+      '<div class="f" id="e-opts-w"><span class="small" style="display:block;margin-bottom:6px;color:var(--sub);font-size:14px">선택지 (2~6개)</span><div id="e-opts"></div>' +
+      '<button class="btn sm line" id="e-add">+ 선택지 추가</button></div>' +
+      '<label class="f"><span>장표 연결 키 (선택 · 영문 소문자 · 숫자 · _ -)</span><input type="text" id="e-key" maxlength="30" placeholder="예: agi" autocapitalize="off" autocomplete="off" spellcheck="false">' +
+      '<span class="small" id="e-keyhint" style="display:block;margin-top:6px"></span></label>' +
+      '<label class="check" id="e-chg-w"><input type="checkbox" id="e-chg"> 학생이 답을 바꿀 수 있음</label>' +
+      '<label class="check"><input type="checkbox" id="e-show"> 학생 폰에도 결과 보여주기 (보낸 뒤)</label>' +
+      '</div><div class="pv"><div class="pvrow"><div><h4>학생 폰</h4><div class="phone"><iframe id="e-phone" src="index.html?preview=1" title="학생 화면 미리보기"></iframe></div></div>' +
+      '<div style="flex:1;min-width:280px"><h4>덱 결과 (예시 데이터)</h4><div class="slide16" id="e-slide"><div class="sc"><div class="sk">' + esc(S.room.title) +
+      '</div><div class="sh" id="e-sh"></div><div class="lv-box" id="e-box"><div class="lv-w"><div class="lv-main"><div class="lv-prompt"></div><div class="lv-body" id="e-body"></div></div>' +
+      '<div class="lv-side"><div class="lv-qr">' + LV.qrSvg(LV.roomUrl(S.room.id)) + '</div><div class="lv-url">' + LV.urlLines(S.room.id) + '</div>' +
+      '<div class="lv-count"><b>32</b><span>명 참여</span></div><div class="lv-state lv-on">받는 중</div></div></div></div></div></div></div></div></div></div>' +
+      '<div class="msg" id="e-msg"></div><div class="foot">' + (isNew ? '' : '<span class="small">수정해도 받은 응답은 그대로 남아요</span>') + '<span class="sp"></span>' +
+      '<button class="btn" id="e-cancel">취소</button><button class="btn" id="e-save">저장</button><button class="btn pri" id="e-saveopen">저장하고 바로 열기</button></div>';
+    sh.hidden = false; document.body.style.overflow = 'hidden';
+    $('#e-prompt').value = d.prompt; $('#e-key').value = d.key || ''; $('#e-chg').checked = d.allow_change; $('#e-show').checked = d.show_results;
+    $$('#e-type button').forEach(function (b) { b.onclick = function (ev) { ev.preventDefault(); d.type = b.getAttribute('data-v'); syncEd(); }; });
+    $('#e-prompt').oninput = function () { d.prompt = this.value; syncPreview(); };
+    $('#e-key').oninput = function () { this.value = this.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); d.key = this.value; syncKeyHint(); };
+    $('#e-chg').onchange = function () { d.allow_change = this.checked; syncPreview(); };
+    $('#e-show').onchange = function () { d.show_results = this.checked; syncPreview(); };
+    $('#e-add').onclick = function (ev) { ev.preventDefault(); if (d.options.length < 6) { d.options.push(''); syncEd(); } };
+    $('#e-cancel').onclick = closeSheet;
+    $('#e-save').onclick = function () { saveQ(isNew ? null : q, false); };
+    $('#e-saveopen').onclick = function () { saveQ(isNew ? null : q, true); };
+    window.onmessage = function (e) { if (e.data && e.data.lvPreviewReady) syncPreview(); };
+    syncEd();
+    setTimeout(function () { $('#e-prompt').focus(); }, 50);
+    fitSlide();
+  }
+  function closeSheet() { $('#sheet').hidden = true; document.body.style.overflow = ''; S.edit = null; window.onmessage = null; render(); }
+  function fitSlide() {
+    var s = $('#e-slide'); if (!s) return;
+    $('.sc', s).style.transform = 'scale(' + (s.clientWidth / 1600) + ')';
+  }
+  window.addEventListener('resize', fitSlide);
+
+  function syncEd() {
+    var d = S.edit;
+    $$('#e-type button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-v') === d.type); });
+    $('#e-opts-w').style.display = d.type === 'choice' ? '' : 'none';
+    $('#e-chg-w').style.display = d.type === 'wordcloud' ? 'none' : '';
+    $('#e-prompt').placeholder = EX[d.type];
+    var box = $('#e-opts'); box.innerHTML = '';
+    d.options.forEach(function (o, i) {
+      var r = document.createElement('div'); r.className = 'optrow';
+      r.innerHTML = '<input type="text" maxlength="60" placeholder="선택지 ' + (i + 1) + '"><button class="btn sm line"' + (d.options.length <= 2 ? ' disabled' : '') + '>삭제</button>';
+      var inp = r.querySelector('input'); inp.value = o;
+      inp.oninput = function () { d.options[i] = inp.value; syncPreview(); };
+      r.querySelector('button').onclick = function (ev) { ev.preventDefault(); d.options.splice(i, 1); syncEd(); };
+      box.appendChild(r);
+    });
+    $('#e-add').disabled = d.options.length >= 6;
+    syncKeyHint(); syncPreview();
+  }
+  function syncKeyHint() {
+    var k = S.edit.key, h = $('#e-keyhint'), clash = k && S.questions.some(function (q) { return q.key === k && q.id !== S.edit.id; });
+    if (!k) h.innerHTML = '키가 없으면 <code>data-q="live"</code> 장표에서 열린 동안에만 보여요';
+    else if (k === 'live' || k === 'qa') h.innerHTML = '<span class="flag">live, qa 는 쓸 수 없는 이름이에요</span>';
+    else if (clash) h.innerHTML = '<span class="flag">이 방에 같은 키가 이미 있어요</span>';
+    else h.innerHTML = '장표에 <code>&lt;div class="lv-box" data-room="' + esc(S.room.id) + '" data-q="' + esc(k) + '"&gt;&lt;/div&gt;</code>';
+  }
+  function sample(d) {
+    var opts = d.type === 'choice' ? d.options.map(function (o, i) { return o.trim() || '선택지 ' + (i + 1); }) : [];
+    var data;
+    if (d.type === 'choice') data = opts.map(function (_, i) { return [13, 8, 6, 3, 2, 1][i] || 1; });
+    else if (d.type === 'text') data = ['끝까지 해내는 사람이라서', '배운 걸 바로 써먹는 편이에요', '처음 보는 일도 겁내지 않아요', '팀에서 말을 잘 이어 주는 역할을 해요', '꾸준함 하나는 자신 있습니다', '실패해도 다시 해 봐요']
+      .map(function (v, i) { return { id: 'p' + i, v: v }; });
+    else data = [['미래', 9], ['변화', 7], ['도구', 6], ['일자리', 5], ['편리함', 4], ['걱정', 4], ['창의성', 3], ['속도', 3], ['공부', 2], ['기회', 2], ['챗봇', 2], ['자동화', 1], ['검색', 1], ['효율', 1]]
+      .map(function (x) { return { w: x[0], n: x[1], k: x[0] }; });
+    return { id: 'preview-' + d.type + '-' + opts.join('|'), type: d.type, prompt: d.prompt || EX[d.type].replace(/^예: /, ''), options: opts, open: true, n: 32, data: data };
+  }
+  var pvT;
+  function syncPreview() {
+    clearTimeout(pvT);
+    pvT = setTimeout(function () {
+      var d = S.edit; if (!d) return;
+      var res = sample(d);
+      $('#e-sh').textContent = res.prompt;
+      fitSlide();
+      LV.renderResult($('#e-body'), res, {});
+      var f = $('#e-phone');
+      if (f && f.contentWindow) f.contentWindow.postMessage({ lvPreview: { title: S.room.title, q: {
+        id: 'preview', type: d.type, prompt: res.prompt, options: res.options, allow_change: d.allow_change, show_results: false } } }, '*');
+    }, 120);
+  }
+  function saveQ(orig, andOpen) {
+    var d = S.edit, msg = $('#e-msg');
+    msg.textContent = '';
+    var prompt = d.prompt.trim();
+    if (!prompt) { msg.textContent = '질문 문구를 써 주세요'; return; }
+    var opts = d.options.map(function (o) { return o.trim(); }).filter(Boolean);
+    if (d.type === 'choice' && (opts.length < 2 || opts.length > 6)) { msg.textContent = '선택지를 2~6개 써 주세요'; return; }
+    var key = (d.key || '').trim() || null;
+    if (key && (key === 'live' || key === 'qa')) { msg.textContent = 'live, qa 는 키로 쓸 수 없어요'; return; }
+    if (key && S.questions.some(function (q) { return q.key === key && (!orig || q.id !== orig.id); })) { msg.textContent = '이 방에 같은 키가 이미 있어요'; return; }
+    var body = { type: d.type, prompt: prompt, options: d.type === 'choice' ? opts : [], key: key,
+      allow_change: d.type === 'wordcloud' ? true : !!d.allow_change, show_results: !!d.show_results };
+    if (orig && orig.type !== d.type && (S.counts[orig.id] || 0) > 0 && !confirm('유형을 바꾸면 기존 응답이 맞지 않을 수 있어요. 응답을 지우고 저장할까요?')) return;
+    $$('.foot button', $('#sheet')).forEach(function (b) { b.disabled = true; });
+    var p;
+    if (orig) {
+      p = api('lv_questions?id=eq.' + orig.id, { method: 'PATCH', headers: { Prefer: 'return=representation' }, body: body }).then(function (r) {
+        if (orig.type !== d.type) return api('lv_responses?question_id=eq.' + orig.id, { method: 'DELETE' }).then(function () { return r; });
+        return r;
+      });
+    } else {
+      body.room_id = S.room.id; body.sort = nextSort();
+      p = api('lv_questions', { method: 'POST', headers: { Prefer: 'return=representation' }, body: body });
+    }
+    p.then(function (rows) {
+      var saved = rows && rows[0];
+      closeSheet();
+      LV.toast('저장했어요');
+      return (andOpen && saved ? openQ(saved.id) : Promise.resolve()).then(loadAll);
+    }, function (e) {
+      $$('.foot button', $('#sheet')).forEach(function (b) { b.disabled = false; });
+      msg.textContent = /duplicate|unique/i.test(e.message) ? '이 방에 같은 키가 이미 있어요' : '저장하지 못했어요: ' + e.message;
+    });
+  }
+
+  /* ───────── 결과 · 숨기기 ───────── */
+  function openResults(id, quiet) {
+    var q = findQ(id); if (!q) { S.view = null; return render(); }
+    S.view = { type: 'results', id: id };
+    Promise.all([
+      api('lv_responses?select=id,client_id,value,norm,hidden,blocked,created_at&question_id=eq.' + id + '&order=created_at.desc'),
+      api('lv_hidden_terms?select=norm&question_id=eq.' + id),
+      LV.rpc('lv_results', { p_qid: id })
+    ]).then(function (r) {
+      if (!S.view || S.view.id !== id) return;
+      drawResults(q, r[0] || [], (r[1] || []).map(function (x) { return x.norm; }), r[2], quiet);
+    }, fail);
+  }
+  function drawResults(q, rows, hiddenTerms, res, quiet) {
+    var main = $('#main'), open = S.room.active_question_id === q.id;
+    var y = window.scrollY;
+    var html = '<div class="toolbar"><button class="btn" id="back">← 목록</button><span class="sp"></span>' +
+      (open ? '<button class="btn" id="r-close">닫기</button>' : '<button class="btn pri" id="r-open">열기</button>') + '</div>' +
+      '<div class="card" style="margin-bottom:16px"><div class="small">' + TYPE[q.type] + (q.key ? ' · 키 ' + esc(q.key) : '') + ' · ' + (res ? res.n : 0) + '명 참여</div>' +
+      '<div style="font-size:20px;font-weight:700;margin-top:4px;word-break:keep-all">' + esc(q.prompt) + '</div>' +
+      '<div class="lv-box lv-compact" style="margin-top:16px"><div class="lv-body" id="r-body"></div></div></div>';
+    if (q.type === 'text') {
+      html += '<h2>답변 ' + rows.length + '개 · 숨긴 답은 덱에 안 보여요</h2><div class="list">';
+      if (!rows.length) html += '<div class="empty">아직 답변이 없어요</div>';
+      rows.forEach(function (r) {
+        var off = r.hidden || r.blocked;
+        html += '<div class="li' + (off ? ' dim' : '') + '"><div class="tx">' + esc(r.value) + (r.blocked ? ' <span class="flag">금지어</span>' : '') +
+          '<span class="small">' + time(r.created_at) + '</span></div><div class="acts">' +
+          (r.blocked ? '<button class="btn sm" data-unblock="' + r.id + '">그래도 보이기</button>' :
+            '<button class="btn sm" data-hide="' + r.id + '" data-v="' + (r.hidden ? 0 : 1) + '">' + (r.hidden ? '다시 보이기' : '숨기기') + '</button>') + '</div></div>';
+      });
+      html += '</div>';
+    } else if (q.type === 'wordcloud') {
+      var g = {};
+      rows.forEach(function (r) {
+        var x = g[r.norm] = g[r.norm] || { norm: r.norm, n: 0, forms: {}, blocked: 0 };
+        x.n++; x.forms[r.value] = (x.forms[r.value] || 0) + 1; if (r.blocked) x.blocked++;
+      });
+      var list = Object.keys(g).map(function (k) { return g[k]; }).sort(function (a, b) { return b.n - a.n; });
+      html += '<h2>나온 말 ' + list.length + '개 · 눌러서 숨기기</h2>';
+      if (!list.length) html += '<div class="empty">아직 들어온 말이 없어요</div>';
+      html += '<div class="words">';
+      list.forEach(function (x) {
+        var hid = hiddenTerms.indexOf(x.norm) >= 0 || x.blocked === x.n, disp = Object.keys(x.forms).sort(function (a, b) { return x.forms[b] - x.forms[a]; })[0];
+        html += '<span class="wchip' + (hid ? ' off' : '') + '">' + esc(disp) + ' <b>' + x.n + '</b>' + (x.blocked ? '<span class="flag">금지어</span>' : '') +
+          '<button data-term="' + esc(x.norm) + '" data-v="' + (hid ? 0 : 1) + '">' + (hid ? '보이기' : '숨기기') + '</button></span>';
+      });
+      html += '</div>';
+    }
+    main.innerHTML = html;
+    if (res) LV.renderResult($('#r-body'), res, { compact: true });
+    if (quiet) window.scrollTo(0, y);
+    $('#back').onclick = function () { S.view = null; render(); };
+    if ($('#r-open')) $('#r-open').onclick = function () { openQ(q.id).then(function () { openResults(q.id, true); }); };
+    if ($('#r-close')) $('#r-close').onclick = function () { openQ(null).then(function () { openResults(q.id, true); }); };
+    $$('[data-hide]', main).forEach(function (b) {
+      b.onclick = function () {
+        api('lv_responses?id=eq.' + b.getAttribute('data-hide'), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: { hidden: b.getAttribute('data-v') === '1' } })
+          .then(function () { openResults(q.id, true); }, fail);
+      };
+    });
+    $$('[data-unblock]', main).forEach(function (b) {
+      b.onclick = function () {
+        api('lv_responses?id=eq.' + b.getAttribute('data-unblock'), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: { blocked: false, hidden: false } })
+          .then(function () { openResults(q.id, true); }, fail);
+      };
+    });
+    $$('[data-term]', main).forEach(function (b) {
+      b.onclick = function () {
+        var norm = b.getAttribute('data-term'), hide = b.getAttribute('data-v') === '1';
+        var p = hide ? api('lv_hidden_terms', { method: 'POST', headers: { Prefer: 'return=minimal,resolution=ignore-duplicates' }, body: { question_id: q.id, norm: norm } })
+          : Promise.all([api('lv_hidden_terms?question_id=eq.' + q.id + '&norm=eq.' + encodeURIComponent(norm), { method: 'DELETE' }),
+            api('lv_responses?question_id=eq.' + q.id + '&norm=eq.' + encodeURIComponent(norm), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: { blocked: false, hidden: false } })]);
+        p.then(function () { openResults(q.id, true); }, fail);
+      };
+    });
+  }
+  function time(t) { var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+
+  /* ───────── Q&A 관리 ───────── */
+  function renderQA() {
+    var main = $('#main'), r = S.room;
+    var groups = { pending: [], approved: [], answered: [], hidden: [] };
+    S.qa.forEach(function (a) { groups[a.status].push(a); });
+    groups.approved.sort(function (a, b) { return b.likes - a.likes; });
+    var html = '<div class="card" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>Q&amp;A ' + (r.qa_enabled ? '받는 중' : '꺼짐') + '</b>' +
+      '<div class="small">' + (r.qa_moderation ? '승인한 질문만 공개돼요' : '승인 없이 바로 공개돼요 (금지어는 대기로)') + '</div></div>' +
+      '<label class="sw" title="Q&A 켜기/끄기"><input type="checkbox" id="qa-on"' + (r.qa_enabled ? ' checked' : '') + '><span></span></label></div>';
+    function sec(title, list, acts) {
+      html += '<h2>' + title + ' ' + list.length + '</h2>';
+      if (!list.length) { html += '<div class="small" style="padding:4px 2px 8px">없음</div>'; return; }
+      html += '<div class="list">';
+      list.forEach(function (a) {
+        html += '<div class="li' + (a.status === 'hidden' || a.status === 'answered' ? ' dim' : '') + '"><div class="tx">' + esc(a.body) +
+          (a.blocked ? ' <span class="flag">금지어</span>' : '') + '<span class="small">' + time(a.created_at) + ' · 나도 궁금해 ' + a.likes + '</span></div><div class="acts">' +
+          acts.map(function (x) { return '<button class="btn sm' + (x[2] ? ' pri' : '') + '" data-qa="' + a.id + '" data-s="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div></div>';
+      });
+      html += '</div>';
+    }
+    sec('대기', groups.pending, [['approved', '승인', 1], ['hidden', '숨김']]);
+    sec('공개 중', groups.approved, [['answered', '답변 완료', 1], ['hidden', '숨김']]);
+    sec('답변 완료', groups.answered, [['approved', '되돌리기']]);
+    sec('숨김', groups.hidden, [['approved', '공개'], ['pending', '대기로']]);
+    main.innerHTML = html;
+    $('#qa-on').onchange = function () { setRoom({ qa_enabled: this.checked }); };
+    $$('[data-qa]', main).forEach(function (b) {
+      b.onclick = function () {
+        var st = b.getAttribute('data-s'), id = b.getAttribute('data-qa'), body = { status: st };
+        if (st === 'answered') body.answered_at = new Date().toISOString();
+        if (st === 'approved') body.blocked = false;
+        b.disabled = true;
+        api('lv_qa?id=eq.' + id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: body }).then(function () {
+          S.qa.forEach(function (a) { if (String(a.id) === id) { a.status = st; if (st === 'approved') a.blocked = false; } }); render();
+        }, fail);
+      };
+    });
+  }
+  function setRoom(patch) {
+    return api('lv_rooms?id=eq.' + S.room.id, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: patch }).then(function () {
+      Object.assign(S.room, patch); render(); LV.toast('바꿨어요');
+    }, fail);
+  }
+
+  /* ───────── 설정 · 데이터 ───────── */
+  function renderSettings() {
+    var main = $('#main'), r = S.room, url = LV.roomUrl(r.id);
+    main.innerHTML = '<h2>학생 접속</h2><div class="card qrbox"><div class="q">' + LV.qrSvg(url) + '</div><div style="flex:1;min-width:220px">' +
+      '<div style="font-size:18px;font-weight:700;word-break:break-all"><a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(LV.shortUrl(r.id)) + '</a></div>' +
+      '<div class="small" style="margin-top:6px">QR 이미지: <a href="qr/' + esc(r.id) + '.png" download>PNG 받기</a> · <a href="qr/' + esc(r.id) + '.svg" download>SVG 받기</a></div></div></div>' +
+      '<h2>방 설정</h2><div class="card"><label class="f"><span>학생 화면 제목</span><div class="optrow"><input type="text" id="s-title" maxlength="40"><button class="btn" id="s-title-save">저장</button></div></label>' +
+      '<div class="setrow"><div class="tx"><b>Q&amp;A 받기</b><div class="small">끄면 학생 Q&amp;A 탭에 「지금은 Q&amp;A를 받지 않아요」</div></div><label class="sw"><input type="checkbox" id="s-qa"' + (r.qa_enabled ? ' checked' : '') + '><span></span></label></div>' +
+      '<div class="setrow"><div class="tx"><b>Q&amp;A 승인 후 공개</b><div class="small">끄면 바로 공개 (금지어가 들어간 질문은 그래도 대기)</div></div><label class="sw"><input type="checkbox" id="s-mod"' + (r.qa_moderation ? ' checked' : '') + '><span></span></label></div></div>' +
+      '<h2>금지어 (모든 방 공통) · 걸리면 저장은 되지만 화면에 안 떠요</h2><div class="card"><form class="optrow" id="s-bf"><input type="text" id="s-bw" maxlength="30" placeholder="추가할 말"><button class="btn">추가</button></form>' +
+      '<div class="blk" id="s-bl" style="margin-top:12px"><span class="small">불러오는 중…</span></div></div>' +
+      '<h2>강의 후 정리</h2><div class="card"><div class="toolbar"><button class="btn" id="s-csv">응답 CSV 받기</button><button class="btn" id="s-csvqa">Q&amp;A CSV 받기</button></div>' +
+      '<div class="toolbar" style="margin:0"><button class="btn line" id="s-wipe">이 방 응답 · Q&amp;A 모두 삭제</button><button class="btn line" id="s-wipeall">질문까지 모두 삭제</button></div>' +
+      '<div class="small">지운 데이터는 되살릴 수 없어요. CSV를 먼저 받아 두세요.</div></div>';
+    $('#s-title').value = r.title;
+    $('#s-title-save').onclick = function () { var v = $('#s-title').value.trim(); if (v) setRoom({ title: v }); };
+    $('#s-qa').onchange = function () { setRoom({ qa_enabled: this.checked }); };
+    $('#s-mod').onchange = function () { setRoom({ qa_moderation: this.checked }); };
+    $('#s-bf').onsubmit = function (e) {
+      e.preventDefault(); var w = $('#s-bw').value.trim(); if (!w) return;
+      api('lv_blocked_words', { method: 'POST', headers: { Prefer: 'return=minimal,resolution=ignore-duplicates' }, body: { word: w } })
+        .then(function () { $('#s-bw').value = ''; return loadBlocked(); }).then(drawBlocked, fail);
+    };
+    $('#s-csv').onclick = csvResponses; $('#s-csvqa').onclick = csvQA;
+    $('#s-wipe').onclick = function () { wipe(false); }; $('#s-wipeall').onclick = function () { wipe(true); };
+    loadBlocked().then(drawBlocked, fail);
+  }
+  function drawBlocked() {
+    var el = $('#s-bl'); if (!el) return;
+    el.innerHTML = S.blocked.map(function (w) { return '<span>' + esc(w) + '<button data-w="' + esc(w) + '" title="빼기">×</button></span>'; }).join('') || '<span class="small">없음</span>';
+    $$('button', el).forEach(function (b) {
+      b.onclick = function () {
+        api('lv_blocked_words?word=eq.' + encodeURIComponent(b.getAttribute('data-w')), { method: 'DELETE' }).then(loadBlocked).then(drawBlocked, fail);
+      };
+    });
+  }
+  function csvCell(v) { v = v == null ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function download(name, rows) {
+    var text = '﻿' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+    a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function stamp() { var d = new Date(); return d.getFullYear() + ('0' + (d.getMonth() + 1)).slice(-2) + ('0' + d.getDate()).slice(-2); }
+  function fmt(t) { var d = new Date(t); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) + ' ' + time(t); }
+  function csvResponses() {
+    var ids = S.questions.map(function (q) { return q.id; });
+    if (!ids.length) return LV.toast('질문이 없어요');
+    api('lv_responses?select=*&question_id=in.(' + ids.join(',') + ')&order=created_at').then(function (rows) {
+      var who = {}, n = 0, qm = {};
+      S.questions.forEach(function (q) { qm[q.id] = q; });
+      var out = [['방', '질문 순서', '유형', '질문', '응답자', '답', '숨김', '금지어', '시각']];
+      rows.forEach(function (r) {
+        var q = qm[r.question_id]; if (!who[r.client_id]) who[r.client_id] = '학생' + (++n);
+        var v = q.type === 'choice' ? (q.options[+r.value] || r.value) : r.value;
+        out.push([S.room.id, S.questions.indexOf(q) + 1, TYPE[q.type], q.prompt, who[r.client_id], v, r.hidden ? 'Y' : '', r.blocked ? 'Y' : '', fmt(r.created_at)]);
+      });
+      download('응답_' + S.room.id + '_' + stamp() + '.csv', out);
+    }, fail);
+  }
+  function csvQA() {
+    api('lv_qa?select=*&room_id=eq.' + S.room.id + '&order=created_at').then(function (rows) {
+      var ST = { pending: '대기', approved: '공개', answered: '답변 완료', hidden: '숨김' };
+      var out = [['방', '질문', '상태', '나도 궁금해', '금지어', '시각']];
+      rows.forEach(function (a) { out.push([S.room.id, a.body, ST[a.status], a.likes, a.blocked ? 'Y' : '', fmt(a.created_at)]); });
+      download('QnA_' + S.room.id + '_' + stamp() + '.csv', out);
+    }, fail);
+  }
+  function wipe(withQ) {
+    var word = withQ ? '모두삭제' : '삭제';
+    var t = prompt((withQ ? S.room.id + ' 방의 질문 · 응답 · Q&A를 모두' : S.room.id + ' 방의 응답과 Q&A를 모두') + ' 지웁니다.\n계속하려면 「' + word + '」라고 입력하세요');
+    if (t !== word) return;
+    rpcA('lv_admin_wipe', { p_room: S.room.id, p_questions: withQ }).then(function (r) {
+      LV.toast('삭제했어요 · 응답 ' + r.responses + ' · Q&A ' + r.qa + (withQ ? ' · 질문 ' + r.questions : ''));
+      return loadAll();
+    }, fail);
+  }
+
+  /* ───────── 시작 ───────── */
+  function start() {
+    shell();
+    $('#main').innerHTML = '<div class="empty">불러오는 중…</div>';
+    loadRooms().then(function () {
+      if (!S.rooms.length) { $('#main').innerHTML = '<div class="empty">방이 없어요. SQL 마이그레이션을 먼저 실행해 주세요.</div>'; return; }
+      var saved; try { saved = localStorage.getItem('lv-admin-room'); } catch (e) {}
+      var q = new URLSearchParams(location.search).get('r');
+      pickRoom(q || saved || S.rooms[0].id);
+    }, fail);
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('#sheet') && !$('#sheet').hidden) closeSheet(); });
+  if (LV.auth.get()) LV.auth.token().then(function (t) { if (t) start(); else loginView(); }); else loginView();
+})();
+</script>
+</body>
+</html>

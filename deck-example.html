@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>덱 위젯 예시 (file:// 로 열어 보세요)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<!-- 실제 덱에는 아래 두 줄 대신 lv-widget.css, lv-widget.js 내용을 <style>, <script> 로 그대로 붙여 넣는다 -->
+<link rel="stylesheet" href="lv-widget.css">
+<style>
+/* ── 여기부터는 실제 덱을 흉내 낸 부분 (덱에는 이미 있음) ── */
+:root{--bg:#000;--card:#1C1C1E;--card2:#2C2C2E;--ink:#F5F5F7;--sub:#A1A1A6;--mute:#6E6E73;--acc:#FF9F0A}
+html,body{margin:0;height:100%;background:#000;color:var(--ink);font-family:"Pretendard Variable",Pretendard,system-ui,sans-serif;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:center}
+section.slide{position:absolute;inset:0;padding:70px 90px;box-sizing:border-box;display:none}
+section.slide.active{display:block}
+.k{font-size:24px;font-weight:700;color:var(--acc)}
+h2{font-size:56px;font-weight:800;line-height:1.2;margin:8px 0 34px;letter-spacing:-.02em}
+.msg{font-size:28px;color:var(--sub)}
+.src{position:absolute;left:90px;bottom:36px;font-size:15px;color:var(--mute)}
+.pg{position:fixed;right:16px;bottom:12px;color:#444;font:13px system-ui}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <!-- ① 워드클라우드: 관리 화면에서 키 ai_word 를 붙인 질문 -->
+  <section class="slide" data-n="1">
+    <div class="k">생각 열기</div>
+    <h2>AI 하면 떠오르는 단어 하나</h2>
+    <div class="lv-box" data-room="w1" data-q="ai_word"></div>
+  </section>
+
+  <!-- ② 객관식: 키 agi. data-close="1" 이면 장표를 떠날 때 질문을 닫는다 -->
+  <section class="slide" data-n="2">
+    <div class="k">투표</div>
+    <h2>AGI, 몇 년 뒤에 올까요?</h2>
+    <div class="lv-box" data-room="w1" data-q="agi" data-close="1"></div>
+    <div class="src">실시간 투표 · 응답은 익명</div>
+  </section>
+
+  <!-- ③ 지금 열린 질문 (즉석 질문용). 질문 문구도 위젯이 보여 준다 -->
+  <section class="slide" data-n="3">
+    <div class="k">즉석 질문</div>
+    <div class="lv-box" data-room="w1" data-q="live" style="height:680px"></div>
+  </section>
+
+  <!-- ④ 익명 Q&A: 승인된 질문을 「나도 궁금해」 많은 순으로. 강사 로그인 상태면 눌러서 답변 완료 -->
+  <section class="slide" data-n="4">
+    <div class="k">Q&amp;A</div>
+    <h2>궁금한 것, 익명으로 물어보세요</h2>
+    <div class="lv-box" data-room="w1" data-q="qa"></div>
+  </section>
+
+</div>
+<div class="pg" id="pg"></div>
+
+<!-- 실제 덱에는 lv-widget.js 내용을 <script> … </script> 로 붙여 넣는다 (덱의 다른 스크립트 뒤, </body> 바로 앞) -->
+<script src="lv-widget.js"></script>
+<script>
+/* 덱 흉내: 장표 아무 곳이나 누르면 다음 장. .ui, video, a, button 안은 무시. ← → 키로 이동 */
+var slides = document.querySelectorAll('section.slide'), cur = 0;
+function show(i) {
+  cur = Math.max(0, Math.min(slides.length - 1, i));
+  slides.forEach(function (s, k) { s.classList.toggle('active', k === cur); });
+  document.getElementById('pg').textContent = (cur + 1) + ' / ' + slides.length;
+}
+function fit() {
+  var s = Math.min(innerWidth / 1600, innerHeight / 900);
+  document.getElementById('stage').style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+}
+document.addEventListener('click', function (e) {
+  if (e.target.closest('.ui, video, a, button')) return;
+  show(cur + 1);
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') show(cur + 1);
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') show(cur - 1);
+});
+addEventListener('resize', fit); fit(); show(0);
+</script>
+</body>
+</html>

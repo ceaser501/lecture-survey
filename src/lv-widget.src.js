@@ -252,11 +252,13 @@
   function renderChoice(body, res) {
     var opts = res.options || [], counts = res.data || [], total = 0, max = 0;
     counts.forEach(function (c) { total += c; if (c > max) max = c; });
-    var sig = res.id + '|' + JSON.stringify(opts);
+    if (res.multi) total = res.n || 0; // 복수 선택: 응답한 사람 중 몇 %가 골랐나
+    var sig = res.id + '|' + JSON.stringify(opts) + (res.multi ? '|m' : '');
     var wrap = body.querySelector('.lv-bars');
     if (!wrap || wrap.getAttribute('data-sig') !== sig) {
       body.innerHTML = '';
       wrap = h('div', 'lv-bars lv-n' + opts.length);
+      if (res.multi) wrap.appendChild(h('div', 'lv-multi', '복수 선택 · 응답자 중 고른 비율'));
       wrap.setAttribute('data-sig', sig);
       opts.forEach(function (o) {
         var b = h('div', 'lv-bar', '<div class="lv-bar-row"><span class="lv-bar-t">' + esc(o) +
@@ -267,7 +269,7 @@
       body.appendChild(wrap);
       wrap.offsetWidth; // 0%에서 자라도록
     }
-    Array.prototype.forEach.call(wrap.children, function (b, i) {
+    Array.prototype.forEach.call(wrap.querySelectorAll('.lv-bar'), function (b, i) {
       var c = counts[i] || 0, p = pct(c, total);
       b.classList.toggle('lv-top', max > 0 && c === max);
       b.querySelector('.lv-v').textContent = p;
@@ -548,7 +550,7 @@
       clearTimeout(st.poll);
       if (st.unsub) st.unsub();
       if (autoClose && !isQA && !isLive && auth.get() && st.data && st.data.result && st.data.result.open) {
-        rpc('lv_admin_open', { p_room: room, p_qid: null }, true).catch(function () {});
+        rpc('lv_admin_close', { p_qid: st.data.result.id }, true).catch(function () {});
       }
     }
 

@@ -55,7 +55,7 @@ body.offline .off{display:block}
   <button id="prev" title="이전 (←)">←</button>
   <span class="pos" id="pos"></span>
   <button id="next" title="다음 (→)">→</button>
-  <button id="jump" title="강사가 연 질문으로">지금 열린 질문</button>
+  <button id="jump" title="강사가 연 질문으로">방금 연 질문</button>
   <button id="toggle" class="pri" title="학생 응답 받기 시작/마감 (강사 로그인 필요)">열기</button>
   <button id="fs" title="전체화면 (F)">전체화면</button>
 </div>
@@ -83,11 +83,11 @@ body.offline .off{display:block}
   /* 장표 그리기 — 같은 장표면 다시 만들지 않고 위젯이 스스로 갱신 */
   function show() {
     var sl = slide();
-    if (idx() < 0) S.cur = sl.k;
-    history.replaceState(null, '', '?r=' + room + (S.cur === 'cover' ? '' : '&s=' + encodeURIComponent(S.cur)));
+    if (idx() < 0 && S.loaded) S.cur = sl.k; // 목록을 받기 전에는 요청한 장표를 기억해 둔다
+    if (S.loaded) history.replaceState(null, '', '?r=' + room + (S.cur === 'cover' ? '' : '&s=' + encodeURIComponent(S.cur)));
     drawBar();
-    if (S.shown === S.cur) return;
-    S.shown = S.cur;
+    if (S.shown === sl.k) return;
+    S.shown = sl.k;
     if (S.widget) { S.widget.destroy(); S.widget = null; }
     var st = $('stage');
     if (sl.k === 'cover') {
@@ -122,8 +122,8 @@ body.offline .off{display:block}
     $('jump').style.display = S.active && S.cur !== S.active ? '' : 'none';
     var t = $('toggle');
     if (!logged || sl.k === 'cover' || sl.k === 'qa') t.style.display = 'none';
-    else { var open = S.active === sl.k; t.style.display = ''; t.textContent = open ? '마감' : '열기'; t.className = open ? '' : 'pri'; }
-    $('dots').innerHTML = S.slides.map(function (s, k) { return '<i class="' + (k === i ? 'on' : s.k === S.active ? 'live' : '') + '"></i>'; }).join('');
+    else { var open = !!sl.open; t.style.display = ''; t.textContent = open ? '마감' : '열기'; t.className = open ? '' : 'pri'; }
+    $('dots').innerHTML = S.slides.map(function (s, k) { return '<i class="' + (k === i ? 'on' : s.open ? 'live' : '') + '"></i>'; }).join('');
   }
 
   function go(d) {
@@ -142,7 +142,7 @@ body.offline .off{display:block}
       var prevActive = S.active;
       S.title = d.title; S.active = d.active;
       document.title = '결과 · ' + d.title;
-      S.slides = [{ k: 'cover' }].concat(d.items.map(function (q) { return { k: q.id, type: q.type }; }));
+      S.slides = [{ k: 'cover' }].concat(d.items.map(function (q) { return { k: q.id, type: q.type, open: q.open }; }));
       if (d.qa > 0) S.slides.push({ k: 'qa' });
       // 강사가 새 질문을 열면 그 장표로 넘어간다
       if (d.active && d.active !== prevActive && prevActive !== undefined && S.loaded) S.cur = d.active;
@@ -158,8 +158,9 @@ body.offline .off{display:block}
   $('jump').onclick = function (e) { e.stopPropagation(); if (S.active) { S.cur = S.active; show(); } };
   $('toggle').onclick = function (e) {
     e.stopPropagation();
-    var target = S.active === S.cur ? null : S.cur;
-    LV.rpc('lv_admin_open', { p_room: room, p_qid: target }, true).then(load, function () { LV.toast('강사 로그인이 필요해요 (관리 화면에서 로그인)'); });
+    var sl = slide();
+    var p = sl.open ? LV.rpc('lv_admin_close', { p_qid: sl.k }, true) : LV.rpc('lv_admin_open', { p_room: room, p_qid: sl.k }, true);
+    p.then(load, function () { LV.toast('강사 로그인이 필요해요 (관리 화면에서 로그인)'); });
   };
   $('fs').onclick = function (e) {
     if (e) e.stopPropagation();

@@ -55,6 +55,9 @@
 .lv-bars.lv-n5,.lv-bars.lv-n6{gap:14px}
 .lv-bars.lv-n5 .lv-bar-track,.lv-bars.lv-n6 .lv-bar-track{height:16px}
 
+.lv-multi{font-size:18px;color:var(--lv-mute);margin-bottom:-6px}
+.lv-compact .lv-multi{font-size:13px}
+
 /* 주관식 카드 벽 */
 .lv-cards{column-width:330px;column-gap:18px;height:100%;overflow:hidden}
 .lv-card{break-inside:avoid;display:inline-block;width:100%;margin:0 0 18px;padding:20px 24px;border-radius:18px;

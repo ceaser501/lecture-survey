@@ -22,6 +22,7 @@ create table if not exists public.lv_questions (
   options jsonb not null default '[]'::jsonb check (jsonb_typeof(options) = 'array'),
   allow_change boolean not null default true,
   show_results boolean not null default false,
+  multi boolean not null default false,          -- 객관식 복수 선택
   sort int not null default 0,
   created_at timestamptz not null default now(),
   unique (room_id, key)
@@ -146,7 +147,7 @@ language sql stable security definer set search_path = public as $$
     'room', jsonb_build_object('id', r.id, 'title', r.title,
                                'qa_enabled', r.qa_enabled, 'qa_moderation', r.qa_moderation),
     'q', (select jsonb_build_object('id', q.id, 'key', q.key, 'type', q.type, 'prompt', q.prompt,
-                 'options', q.options, 'allow_change', q.allow_change, 'show_results', q.show_results)
+                 'options', q.options, 'allow_change', q.allow_change, 'show_results', q.show_results, 'multi', q.multi)
           from public.lv_questions q where q.id = r.active_question_id)) end
   from (select 1) x left join public.lv_rooms r on r.id = p_room;
 $$;
@@ -185,7 +186,7 @@ begin
           group by r.norm order by count(*) desc, min(r.created_at) limit 80) w;
   end if;
   return jsonb_build_object('id', q.id, 'key', q.key, 'type', q.type, 'prompt', q.prompt,
-    'options', q.options, 'open', open, 'n', n, 'data', res);
+    'options', q.options, 'multi', q.multi, 'open', open, 'n', n, 'data', res);
 end $$;
 
 -- 덱 위젯용: 키(또는 live)로 결과 한 번에
@@ -215,7 +216,7 @@ language sql stable security definer set search_path = public as $$
   from public.lv_responses where question_id = p_qid and client_id = p_cid;
 $$;
 
--- 응답 보내기. p_values: 객관식 ['2'], 주관식 ['문장'], 워드클라우드 ['말1', ...] (기존 것에 더함, 최대 3)
+-- 응답 보내기. p_values: 객관식 ['2'] (복수 선택이면 ['0','2'] — 고른 것 전체로 바꿈), 주관식 ['문장'], 워드클라우드 ['말1', ...] (기존 것에 더함, 최대 3)
 create or replace function public.lv_submit(p_room text, p_qid uuid, p_cid text, p_values text[])
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare q public.lv_questions; r public.lv_rooms; v text; vals text[] := '{}'; norms text[] := '{}';
@@ -238,11 +239,22 @@ begin
 
   perform pg_advisory_xact_lock(hashtext(p_qid::text || p_cid));
 
-  if q.type in ('choice','text') then
+  if q.type = 'choice' then
+    foreach v in array vals loop
+      if v !~ '^[0-9]+$' or v::int >= jsonb_array_length(q.options) then
+        return jsonb_build_object('ok', false, 'err', 'invalid');
+      end if;
+    end loop;
+  end if;
+  if q.type = 'choice' and q.multi then
+    select count(*) into have from public.lv_responses where question_id = q.id and client_id = p_cid;
+    if have > 0 and not q.allow_change then return jsonb_build_object('ok', false, 'err', 'locked'); end if;
+    delete from public.lv_responses where question_id = q.id and client_id = p_cid and not (value = any(vals));
+    insert into public.lv_responses (question_id, client_id, value, norm)
+    select q.id, p_cid, x, x from unnest(vals) x
+    where not exists (select 1 from public.lv_responses e where e.question_id = q.id and e.client_id = p_cid and e.value = x);
+  elsif q.type in ('choice','text') then
     v := vals[1];
-    if q.type = 'choice' and (v !~ '^[0-9]+$' or v::int >= jsonb_array_length(q.options)) then
-      return jsonb_build_object('ok', false, 'err', 'invalid');
-    end if;
     if q.type = 'text' and char_length(v) > 100 then
       return jsonb_build_object('ok', false, 'err', 'long');
     end if;

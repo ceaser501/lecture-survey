@@ -316,43 +316,43 @@ textarea{resize:vertical;min-height:70px}
   }
   function updateResHeads() {
     $$('#res-list .rs[data-q]').forEach(function (sec) {
-      var id = sec.getAttribute('data-q'), open = S.room.active_question_id === id;
+      var id = sec.getAttribute('data-q'), q = findQ(id), open = !!(q && q.is_open);
       sec.querySelector('.st').innerHTML = open ? '· <span class="on">받는 중</span>' : '';
       var ob = sec.querySelector('.ob');
       ob.innerHTML = open ? '<button class="btn sm">닫기</button>' : '<button class="btn sm pri">열기</button>';
-      ob.firstChild.onclick = function () { openQ(open ? null : id); };
+      ob.firstChild.onclick = function () { (open ? closeQ : openQ)(id); };
     });
   }
 
-  function activeQ() {
-    var id = S.room && S.room.active_question_id;
-    return S.questions.filter(function (q) { return q.id === id; })[0] || null;
-  }
+  function openList() { return S.questions.filter(function (q) { return q.is_open; }); }
 
   function renderQuestions() {
-    var a = activeQ(), main = $('#main');
-    var html = '<h2>지금 열린 질문</h2><div class="card live">';
-    if (a) html += '<div class="lt"><div class="lk">● ' + TYPE[a.type] + ' · 받는 중</div><div class="lp">' + esc(a.prompt) + '</div><div class="ln">' + (S.counts[a.id] || 0) + '명 참여</div></div>' +
-      '<button class="btn" id="live-full">전체보기</button><button class="btn lg" id="close">닫기</button>';
-    else html += '<div class="lt"><div class="lk off">닫힘</div><div class="lp muted">학생 화면: 「강사가 질문을 열면 여기에 나타납니다」</div></div>';
-    html += '</div>';
+    var opens = openList(), main = $('#main');
+    var html = '<h2 style="display:flex;align-items:center">지금 열린 질문 ' + (opens.length ? opens.length + '개' : '') + '<span style="flex:1"></span>' +
+      (opens.length > 1 ? '<button class="btn sm" id="close-all">모두 닫기</button>' : '') + '</h2>';
+    if (!opens.length) html += '<div class="card live"><div class="lt"><div class="lk off">닫힘</div><div class="lp muted">학생 화면: 「강사가 질문을 열면 여기에 나타납니다」</div>' +
+      '<div class="ln">여러 질문을 함께 열면 학생 화면에 차례로 모두 나와요</div></div></div>';
+    opens.forEach(function (a) {
+      html += '<div class="card live" style="margin-bottom:10px"><div class="lt"><div class="lk">● ' + TYPE[a.type] + ' · 받는 중</div><div class="lp">' + esc(a.prompt) + '</div><div class="ln">' + (S.counts[a.id] || 0) + '명 참여</div></div>' +
+        '<button class="btn" data-full="' + a.id + '">전체보기</button><button class="btn lg" data-close="' + a.id + '">닫기</button></div>';
+    });
     html += '<h2 style="display:flex;align-items:center">질문 ' + S.questions.length + '개<span style="flex:1"></span><button class="btn pri" id="new">+ 새 질문</button></h2>';
     if (!S.questions.length) html += '<div class="empty">아직 질문이 없어요.<br>「+ 새 질문」으로 강의에서 쓸 질문을 미리 올려 두세요.</div>';
     html += '<div class="qs">';
     S.questions.forEach(function (q, i) {
-      var open = a && a.id === q.id;
-      html += '<div class="qi' + (open ? ' open' : '') + '"><div class="qm" data-edit="' + q.id + '"><div class="qt"><span class="qn">' + (i + 1) + '</span><b>' + TYPE[q.type] + '</b>' +
+      var open = !!q.is_open;
+      html += '<div class="qi' + (open ? ' open' : '') + '"><div class="qm" data-edit="' + q.id + '"><div class="qt"><span class="qn">' + (i + 1) + '</span><b>' + TYPE[q.type] + (q.multi ? '(복수)' : '') + '</b>' +
         (q.key ? ' · 키 <span class="key">' + esc(q.key) + '</span>' : '') + ' · ' + (S.counts[q.id] || 0) + '명' + (open ? ' · <span class="key">받는 중</span>' : '') +
         '</div><div class="qp">' + esc(q.prompt) + '</div></div>' +
-        '<div class="qa">' + (open ? '<button class="btn" data-close="1">닫기</button>' : '<button class="btn pri" data-open="' + q.id + '">열기</button>') +
+        '<div class="qa">' + (open ? '<button class="btn" data-close="' + q.id + '">닫기</button>' : '<button class="btn pri" data-open="' + q.id + '">열기</button>') +
         '<button class="btn more" data-more="' + i + '" aria-label="더 보기">⋯</button></div></div>';
     });
     html += '</div>';
     main.innerHTML = html;
-    if ($('#close')) $('#close').onclick = function () { openQ(null); };
-    if ($('#live-full')) $('#live-full').onclick = function () { fullView(null); };
+    if ($('#close-all')) $('#close-all').onclick = function () { closeAll(); };
+    $$('[data-full]', main).forEach(function (b) { b.onclick = function () { fullView(b.getAttribute('data-full')); }; });
     $('#new').onclick = function () { editor(null); };
-    $$('[data-close]', main).forEach(function (b) { b.onclick = function () { openQ(null); }; });
+    $$('[data-close]', main).forEach(function (b) { b.onclick = function () { closeQ(b.getAttribute('data-close')); }; });
     $$('[data-open]', main).forEach(function (b) { b.onclick = function () { openQ(b.getAttribute('data-open')); }; });
     $$('[data-edit]', main).forEach(function (b) { b.onclick = function () { editor(findQ(b.getAttribute('data-edit'))); }; });
     $$('[data-more]', main).forEach(function (b) {
@@ -400,13 +400,23 @@ textarea{resize:vertical;min-height:70px}
   /* ───────── 질문 동작 ───────── */
   function openQ(id) {
     return rpcA('lv_admin_open', { p_room: S.room.id, p_qid: id }).then(function () {
-      S.room.active_question_id = id; render(); LV.toast(id ? '질문을 열었어요' : '질문을 닫았어요');
+      var q = findQ(id); if (q) q.is_open = true; render(); LV.toast('질문을 열었어요');
+    }, fail);
+  }
+  function closeQ(id) {
+    return rpcA('lv_admin_close', { p_qid: id }).then(function () {
+      var q = findQ(id); if (q) q.is_open = false; render(); LV.toast('질문을 닫았어요');
+    }, fail);
+  }
+  function closeAll() {
+    return rpcA('lv_admin_open', { p_room: S.room.id, p_qid: null }).then(function () {
+      S.questions.forEach(function (q) { q.is_open = false; }); render(); LV.toast('모두 닫았어요');
     }, fail);
   }
   function nextSort() { return S.questions.reduce(function (m, q) { return Math.max(m, q.sort); }, 0) + 1; }
   function dupQ(q) {
     api('lv_questions', { method: 'POST', headers: { Prefer: 'return=minimal' }, body: {
-      room_id: q.room_id, type: q.type, prompt: q.prompt, options: q.options, allow_change: q.allow_change,
+      room_id: q.room_id, type: q.type, prompt: q.prompt, options: q.options, allow_change: q.allow_change, multi: !!q.multi,
       show_results: q.show_results, sort: nextSort(), key: null } }).then(function () { LV.toast('복제했어요 (키는 비워 둠)'); return loadAll(); }, fail);
   }
   function moveQ(i, d) {
@@ -441,7 +451,8 @@ textarea{resize:vertical;min-height:70px}
       '<label class="f"><span>유형</span><div class="seg" id="e-type"><button data-v="choice">객관식</button><button data-v="text">주관식</button><button data-v="wordcloud">워드클라우드</button></div></label>' +
       '<label class="f"><span>질문 문구</span><textarea id="e-prompt" maxlength="200" rows="2"></textarea></label>' +
       '<div class="f" id="e-opts-w"><span class="small" style="display:block;margin-bottom:6px;color:var(--sub);font-size:14px">선택지 (2~6개)</span><div id="e-opts"></div>' +
-      '<button class="btn sm line" id="e-add">+ 선택지 추가</button></div>' +
+      '<button class="btn sm line" id="e-add">+ 선택지 추가</button>' +
+      '<label class="check" style="margin:14px 0 0"><input type="checkbox" id="e-multi"> 여러 개 고를 수 있음 (복수 선택)</label></div>' +
       '<label class="f"><span>장표 연결 키 (선택)</span><input type="text" id="e-key" maxlength="30" placeholder="예: agi" autocapitalize="off" autocomplete="off" spellcheck="false">' +
       '<span class="hint">강의 덱 장표에 이 질문의 결과를 붙일 때 쓰는 이름표예요. 덱을 안 쓰고 「결과 보기」 탭 · 전체보기만 쓴다면 비워 두세요. (영문 소문자 · 숫자 · _ -)</span>' +
       '<span class="small" id="e-keyhint" style="display:block;margin-top:6px"></span></label>' +
@@ -457,6 +468,8 @@ textarea{resize:vertical;min-height:70px}
       '<button class="btn" id="e-cancel">취소</button><button class="btn" id="e-save">저장</button><button class="btn pri" id="e-saveopen">저장하고 바로 열기</button></div>';
     sh.hidden = false; document.body.style.overflow = 'hidden';
     $('#e-prompt').value = d.prompt; $('#e-key').value = d.key || ''; $('#e-chg').checked = d.allow_change; $('#e-show').checked = d.show_results;
+    $('#e-multi').checked = !!d.multi;
+    $('#e-multi').onchange = function () { d.multi = this.checked; syncPreview(); };
     $$('#e-type button').forEach(function (b) { b.onclick = function (ev) { ev.preventDefault(); d.type = b.getAttribute('data-v'); syncEd(); }; });
     $('#e-prompt').oninput = function () { d.prompt = this.value; syncPreview(); };
     $('#e-key').oninput = function () { this.value = this.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''); d.key = this.value; syncKeyHint(); };
@@ -511,7 +524,9 @@ textarea{resize:vertical;min-height:70px}
       .map(function (v, i) { return { id: 'p' + i, v: v }; });
     else data = [['미래', 9], ['변화', 7], ['도구', 6], ['일자리', 5], ['편리함', 4], ['걱정', 4], ['창의성', 3], ['속도', 3], ['공부', 2], ['기회', 2], ['챗봇', 2], ['자동화', 1], ['검색', 1], ['효율', 1]]
       .map(function (x) { return { w: x[0], n: x[1], k: x[0] }; });
-    return { id: 'preview-' + d.type + '-' + opts.join('|'), type: d.type, prompt: d.prompt || EX[d.type].replace(/^예: /, ''), options: opts, open: true, n: 32, data: data };
+    var multi = d.type === 'choice' && !!d.multi;
+    if (multi) data = opts.map(function (_, i) { return [21, 17, 12, 9, 5, 3][i] || 2; });
+    return { id: 'preview-' + d.type + '-' + opts.join('|'), type: d.type, prompt: d.prompt || EX[d.type].replace(/^예: /, ''), options: opts, multi: multi, open: true, n: 32, data: data };
   }
   var pvT;
   function syncPreview() {
@@ -524,7 +539,7 @@ textarea{resize:vertical;min-height:70px}
       LV.renderResult($('#e-body'), res, {});
       var f = $('#e-phone');
       if (f && f.contentWindow) f.contentWindow.postMessage({ lvPreview: { title: S.room.title, q: {
-        id: 'preview', type: d.type, prompt: res.prompt, options: res.options, allow_change: d.allow_change, show_results: false } } }, '*');
+        id: 'preview', type: d.type, prompt: res.prompt, options: res.options, allow_change: d.allow_change, show_results: false, multi: d.type === 'choice' && !!d.multi } } }, '*');
     }, 120);
   }
   function saveQ(orig, andOpen) {
@@ -537,7 +552,7 @@ textarea{resize:vertical;min-height:70px}
     var key = (d.key || '').trim() || null;
     if (key && (key === 'live' || key === 'qa')) { msg.textContent = 'live, qa 는 키로 쓸 수 없어요'; return; }
     if (key && S.questions.some(function (q) { return q.key === key && (!orig || q.id !== orig.id); })) { msg.textContent = '이 방에 같은 키가 이미 있어요'; return; }
-    var body = { type: d.type, prompt: prompt, options: d.type === 'choice' ? opts : [], key: key,
+    var body = { type: d.type, prompt: prompt, options: d.type === 'choice' ? opts : [], key: key, multi: d.type === 'choice' && !!d.multi,
       allow_change: d.type === 'wordcloud' ? true : !!d.allow_change, show_results: !!d.show_results };
     if (orig && orig.type !== d.type && (S.counts[orig.id] || 0) > 0 && !confirm('유형을 바꾸면 기존 응답이 맞지 않을 수 있어요. 응답을 지우고 저장할까요?')) return;
     $$('.foot button', $('#sheet')).forEach(function (b) { b.disabled = true; });
@@ -577,7 +592,7 @@ textarea{resize:vertical;min-height:70px}
     }, fail);
   }
   function drawResults(q, rows, hiddenTerms, res, quiet) {
-    var main = $('#main'), open = S.room.active_question_id === q.id;
+    var main = $('#main'), open = !!q.is_open;
     var y = window.scrollY;
     var html = '<div class="toolbar"><button class="btn" id="back">← 목록</button><span class="sp"></span>' +
       (open ? '<button class="btn" id="r-close">닫기</button>' : '<button class="btn pri" id="r-open">열기</button>') + '</div>' +
@@ -617,7 +632,7 @@ textarea{resize:vertical;min-height:70px}
     if (quiet) window.scrollTo(0, y);
     $('#back').onclick = function () { S.view = null; render(); };
     if ($('#r-open')) $('#r-open').onclick = function () { openQ(q.id).then(function () { openResults(q.id, true); }); };
-    if ($('#r-close')) $('#r-close').onclick = function () { openQ(null).then(function () { openResults(q.id, true); }); };
+    if ($('#r-close')) $('#r-close').onclick = function () { closeQ(q.id).then(function () { openResults(q.id, true); }); };
     $$('[data-hide]', main).forEach(function (b) {
       b.onclick = function () {
         api('lv_responses?id=eq.' + b.getAttribute('data-hide'), { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: { hidden: b.getAttribute('data-v') === '1' } })

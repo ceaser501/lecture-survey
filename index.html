@@ -39,6 +39,8 @@ main[hidden]{display:none}
 .opt .mk{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--mute)}
 .opt.sel{border-color:var(--acc);background:#2a1d08}
 .opt.sel .mk{border-color:var(--acc);background:var(--acc);box-shadow:inset 0 0 0 4px #2a1d08}
+.opt.multi .mk{border-radius:7px}
+.opt.multi.sel .mk{box-shadow:none;background:var(--acc) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/18px no-repeat}
 .opt:disabled{cursor:default}
 .opt:disabled:not(.sel){opacity:.45}
 textarea,input[type=text]{width:100%;border-radius:16px;border:2px solid var(--card2);background:var(--card);padding:14px 16px;font-size:18px;
@@ -59,6 +61,9 @@ textarea{min-height:120px}
 .mine{margin-top:16px;padding:18px;border-radius:16px;background:var(--card);font-size:19px;line-height:1.5;word-break:keep-all;overflow-wrap:anywhere}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .chip{padding:9px 14px;border-radius:999px;background:var(--card2);font-size:17px;font-weight:600}
+.qcard+.qcard{margin-top:34px;padding-top:30px;border-top:1px solid var(--card2)}
+.qno{font-size:14px;font-weight:700;color:var(--acc);margin-bottom:6px}
+.multi-head{margin:0 0 18px;font-size:15px;color:var(--sub)}
 .res{margin-top:30px;padding-top:22px;border-top:1px solid var(--card2)}
 .res h3{margin:0 0 14px;font-size:16px;color:var(--sub);font-weight:600}
 .qa-form{margin-bottom:26px}
@@ -104,7 +109,7 @@ footer{padding:16px 18px calc(18px + env(safe-area-inset-bottom));text-align:cen
   var $ = function (id) { return document.getElementById(id); };
   var paneQ = $('pane-q'), paneQA = $('pane-qa');
 
-  var S = { tab: 'q', room: null, q: null, mine: [], sending: false, editing: false, qa: [], qaLoaded: false, res: null };
+  var S = { tab: 'q', room: null, qa: [], qaLoaded: false };
 
   var ERR = {
     closed: '질문이 닫혔어요', slow: '조금 천천히 눌러 주세요', locked: '이 질문은 답을 바꿀 수 없어요', long: '글자 수가 너무 많아요',
@@ -132,137 +137,196 @@ footer{padding:16px 18px calc(18px + env(safe-area-inset-bottom));text-align:cen
     else offT = setTimeout(function () { netBanner(!LV.net.rest); }, 2000);
   });
 
-  /* ───────── 지금 질문 ───────── */
-  function waitView(msg) {
-    paneQ.innerHTML = '<div class="wait">' + msg + '</div>';
+  /* ───────── 지금 질문 (여러 개가 동시에 열릴 수 있음) ───────── */
+  // S.items[id] = { q, mine, pick, editing, draft, res, sending, el }
+  S.items = {}; S.order = [];
+  function waitView(msg) { S.order = []; paneQ.innerHTML = '<div class="wait">' + msg + '</div>'; }
+  function qs(it, sel) { return it.el.querySelector(sel); }
+
+  function layoutCards() {
+    if (!S.room) return;
+    if (!S.order.length) { paneQ.innerHTML = '<div class="wait"><b>잠시만요</b>강사가 질문을 열면 여기에 나타납니다</div>'; return; }
+    var head = paneQ.querySelector('.multi-head');
+    if (S.order.length > 1) {
+      if (!head) { head = document.createElement('p'); head.className = 'multi-head'; }
+      head.textContent = '열린 질문 ' + S.order.length + '개 · 아래로 내리며 모두 답해 주세요';
+    } else if (head) { head.remove(); head = null; }
+    var frag = document.createDocumentFragment();
+    if (head) frag.appendChild(head);
+    S.order.forEach(function (id) { frag.appendChild(S.items[id].el); });
+    paneQ.innerHTML = ''; paneQ.appendChild(frag);
   }
 
-  function renderQ() {
-    var q = S.q;
-    if (!S.room) return;
-    if (!q) { S.res = null; waitView('<b>잠시만요</b>강사가 질문을 열면 여기에 나타납니다'); return; }
-    var html = '<h1 class="q">' + esc(q.prompt) + '</h1>';
-    if (q.type === 'choice') {
-      var locked = S.mine.length && !q.allow_change;
+  function renderCard(it) {
+    var q = it.q, html = '', n = S.order.indexOf(q.id);
+    if (S.order.length > 1) html += '<div class="qno">' + (n + 1) + ' / ' + S.order.length + '</div>';
+    html += '<h1 class="q">' + esc(q.prompt) + '</h1>';
+    if (q.type === 'choice' && q.multi) {
+      var mlock = it.mine.length && !q.allow_change;
+      if (!it.pick) it.pick = it.mine.slice();
+      html += '<div class="hint">여러 개 골라도 돼요. 다 고른 뒤 보내기' + (q.allow_change ? '' : ' · 한 번만 보낼 수 있어요') + '</div><div class="opts">';
+      (q.options || []).forEach(function (o, i) {
+        var sel = it.pick.indexOf(String(i)) >= 0;
+        html += '<button class="opt multi' + (sel ? ' sel' : '') + '" data-m="' + i + '"' + (mlock ? ' disabled' : '') + '><span class="mk"></span><span>' + esc(o) + '</span></button>';
+      });
+      html += '</div>' + (mlock ? '' : '<button class="btn" data-r="send" style="margin-top:16px">보내기</button>') +
+        '<div class="ok" data-r="ok">' + (it.mine.length ? '보냈어요 ✓ (' + it.mine.length + '개)' : '') + '</div>';
+    } else if (q.type === 'choice') {
+      var locked = it.mine.length && !q.allow_change;
       html += '<div class="hint">' + (q.allow_change ? '하나를 고르세요. 다시 누르면 바뀌어요' : '하나를 고르세요. 한 번만 고를 수 있어요') + '</div><div class="opts">';
       (q.options || []).forEach(function (o, i) {
-        var sel = S.mine[0] === String(i);
+        var sel = it.mine[0] === String(i);
         html += '<button class="opt' + (sel ? ' sel' : '') + '" data-i="' + i + '"' + (locked ? ' disabled' : '') + '><span class="mk"></span><span>' + esc(o) + '</span></button>';
       });
-      html += '</div><div class="ok" id="ok">' + (S.mine.length ? '보냈어요 ✓' : '') + '</div>';
+      html += '</div><div class="ok" data-r="ok">' + (it.mine.length ? '보냈어요 ✓' : '') + '</div>';
     } else if (q.type === 'text') {
-      if (S.mine.length && !S.editing) {
-        html += '<div class="mine">' + esc(S.mine[0]) + '</div><div class="ok">보냈어요 ✓</div>';
-        if (q.allow_change) html += '<button class="btn ghost" id="edit" style="margin-top:12px">고치기</button>';
+      if (it.mine.length && !it.editing) {
+        html += '<div class="mine">' + esc(it.mine[0]) + '</div><div class="ok">보냈어요 ✓</div>';
+        if (q.allow_change) html += '<button class="btn ghost" data-r="edit" style="margin-top:12px">고치기</button>';
       } else {
-        html += '<textarea id="tx" maxlength="100" rows="4" placeholder="한두 문장으로 써 주세요"></textarea>' +
-          '<div class="meta"><span>최대 100자</span><span id="cnt">0/100</span></div><button class="btn" id="send">보내기</button>';
+        html += '<textarea data-r="tx" maxlength="100" rows="4" placeholder="한두 문장으로 써 주세요"></textarea>' +
+          '<div class="meta"><span>최대 100자</span><span data-r="cnt">0/100</span></div><button class="btn" data-r="send">보내기</button>';
       }
     } else {
-      var full = S.mine.length >= 3;
+      var full = it.mine.length >= 3;
       html += '<div class="hint">짧은 말로, 최대 3개까지 보낼 수 있어요</div>';
-      if (!full) html += '<form class="row" id="wf"><input type="text" id="wd" maxlength="10" placeholder="한 단어 (10자까지)" autocomplete="off" enterkeyhint="send"><button class="btn" id="send" type="submit">보내기</button></form>';
-      if (S.mine.length) html += '<div class="chips">' + S.mine.map(function (m) { return '<span class="chip">' + esc(m) + '</span>'; }).join('') + '</div>';
-      html += '<div class="ok">' + (full ? '3개 모두 보냈어요 ✓' : S.mine.length ? '보냈어요 ✓ (' + S.mine.length + '/3)' : '') + '</div>';
+      if (!full) html += '<form class="row" data-r="wf"><input type="text" data-r="wd" maxlength="10" placeholder="한 단어 (10자까지)" autocomplete="off" enterkeyhint="send"><button class="btn" data-r="send" type="submit">보내기</button></form>';
+      if (it.mine.length) html += '<div class="chips">' + it.mine.map(function (m) { return '<span class="chip">' + esc(m) + '</span>'; }).join('') + '</div>';
+      html += '<div class="ok">' + (full ? '3개 모두 보냈어요 ✓' : it.mine.length ? '보냈어요 ✓ (' + it.mine.length + '/3)' : '') + '</div>';
     }
-    html += '<div class="err" id="err"></div>';
-    if (q.show_results && S.mine.length) html += '<div class="res"><h3>지금까지 결과</h3><div class="lv-box lv-compact" id="res"><div class="lv-body"></div></div></div>';
-    paneQ.innerHTML = html;
-    bindQ();
-    if (q.show_results && S.mine.length) drawRes();
+    html += '<div class="err" data-r="err"></div>';
+    if (q.show_results && it.mine.length) html += '<div class="res"><h3>지금까지 결과</h3><div class="lv-box lv-compact"><div class="lv-body"></div></div></div>';
+    it.el.innerHTML = html;
+    bindCard(it);
+    if (q.show_results && it.mine.length) drawRes(it);
   }
 
-  function bindQ() {
-    var q = S.q;
-    Array.prototype.forEach.call(paneQ.querySelectorAll('.opt'), function (b) {
+  function bindCard(it) {
+    var q = it.q;
+    function syncMulti() {
+      var same = it.pick.slice().sort().join() === it.mine.slice().sort().join();
+      if (qs(it, '[data-r=send]')) qs(it, '[data-r=send]').disabled = !it.pick.length || same;
+    }
+    Array.prototype.forEach.call(it.el.querySelectorAll('.opt[data-m]'), function (b) {
       b.onclick = function () {
-        var i = b.getAttribute('data-i');
-        if (S.mine[0] === i) return;
-        Array.prototype.forEach.call(paneQ.querySelectorAll('.opt'), function (x) { x.classList.toggle('sel', x === b); });
-        $('ok').textContent = '';
-        send([i]);
+        var i = b.getAttribute('data-m'), k = it.pick.indexOf(i);
+        if (k >= 0) it.pick.splice(k, 1); else it.pick.push(i);
+        b.classList.toggle('sel', k < 0);
+        qs(it, '[data-r=ok]').textContent = '';
+        syncMulti();
       };
     });
-    var tx = $('tx');
-    if (tx) {
-      tx.oninput = function () { $('cnt').textContent = tx.value.length + '/100'; };
-      if (S.draft) { tx.value = S.draft; tx.oninput(); }
-      $('send').onclick = function () { var v = tx.value.trim(); if (!v) return showErr('empty'); S.draft = tx.value; send([v]); };
+    if (q.type === 'choice' && q.multi && qs(it, '[data-r=send]')) {
+      syncMulti();
+      qs(it, '[data-r=send]').onclick = function () { if (it.pick.length) send(it, it.pick.slice().sort()); };
     }
-    if ($('edit')) $('edit').onclick = function () { S.editing = true; S.draft = S.mine[0]; renderQ(); $('tx').focus(); };
-    if ($('wf')) $('wf').onsubmit = function (e) {
+    Array.prototype.forEach.call(it.el.querySelectorAll('.opt[data-i]'), function (b) {
+      b.onclick = function () {
+        var i = b.getAttribute('data-i');
+        if (it.mine[0] === i) return;
+        Array.prototype.forEach.call(it.el.querySelectorAll('.opt'), function (x) { x.classList.toggle('sel', x === b); });
+        qs(it, '[data-r=ok]').textContent = '';
+        send(it, [i]);
+      };
+    });
+    var tx = qs(it, '[data-r=tx]');
+    if (tx) {
+      tx.oninput = function () { qs(it, '[data-r=cnt]').textContent = tx.value.length + '/100'; it.draft = tx.value; };
+      if (it.draft) { tx.value = it.draft; tx.oninput(); }
+      qs(it, '[data-r=send]').onclick = function () { var v = tx.value.trim(); if (!v) return showErr(it, 'empty'); send(it, [v]); };
+    }
+    if (qs(it, '[data-r=edit]')) qs(it, '[data-r=edit]').onclick = function () { it.editing = true; it.draft = it.mine[0]; renderCard(it); qs(it, '[data-r=tx]').focus(); };
+    if (qs(it, '[data-r=wf]')) qs(it, '[data-r=wf]').onsubmit = function (e) {
       e.preventDefault();
-      var v = $('wd').value.trim();
-      if (!v) return showErr('empty');
-      send([v]);
+      var v = qs(it, '[data-r=wd]').value.trim();
+      if (!v) return showErr(it, 'empty');
+      send(it, [v]);
     };
   }
 
-  function showErr(code) { var e = $('err'); if (e) e.textContent = ERR[code] || ERR.invalid; }
+  function showErr(it, code) { var e = qs(it, '[data-r=err]'); if (e) e.textContent = code ? (ERR[code] || ERR.invalid) : ''; }
 
-  function send(values, retried) {
-    if (PREVIEW) { S.mine = S.q.type === 'wordcloud' ? S.mine.concat(values) : values; S.editing = false; renderQ(); return; }
-    if (S.sending) return;
-    S.sending = true;
-    var btn = $('send'); if (btn) btn.disabled = true;
-    showErr(''); if ($('err')) $('err').textContent = '';
-    var qid = S.q.id;
-    LV.rpc('lv_submit', { p_room: room, p_qid: qid, p_cid: cid, p_values: values }).then(function (r) {
-      S.sending = false;
-      if (!S.q || S.q.id !== qid) return;
-      if (r && r.ok) { S.mine = r.mine || values; S.editing = false; S.draft = ''; renderQ(); return; }
+  function send(it, values, retried) {
+    if (PREVIEW) { it.mine = it.q.type === 'wordcloud' ? it.mine.concat(values) : values; it.pick = null; it.editing = false; renderCard(it); return; }
+    if (it.sending) return;
+    it.sending = true;
+    var btn = qs(it, '[data-r=send]'); if (btn) btn.disabled = true;
+    showErr(it, '');
+    LV.rpc('lv_submit', { p_room: room, p_qid: it.q.id, p_cid: cid, p_values: values }).then(function (r) {
+      it.sending = false;
+      if (!S.items[it.q.id]) return;
+      if (r && r.ok) { it.mine = r.mine || values; it.pick = null; it.editing = false; it.draft = ''; renderCard(it); loadRes(it); return; }
       var code = (r && r.err) || 'invalid';
-      if (code === 'slow' && !retried) { setTimeout(function () { send(values, true); }, 1100); return; }
-      if (r && r.mine) S.mine = r.mine;
-      if (code === 'closed') { refreshState(); }
+      if (code === 'slow' && !retried) { setTimeout(function () { send(it, values, true); }, 1100); return; }
+      if (r && r.mine) it.mine = r.mine;
+      if (code === 'closed') refreshState();
       if (btn) btn.disabled = false;
-      if (S.q.type === 'choice') loadMine().then(renderQ).then(function () { showErr(code); }); else showErr(code);
+      if (it.q.type === 'choice') loadMine(it).then(function () { renderCard(it); showErr(it, code); }); else showErr(it, code);
     }, function () {
-      S.sending = false; if (btn) btn.disabled = false;
-      if (S.q.type === 'choice') Array.prototype.forEach.call(paneQ.querySelectorAll('.opt'), function (x) { x.classList.toggle('sel', S.mine[0] === x.getAttribute('data-i')); });
-      showErr('net');
+      it.sending = false; if (btn) btn.disabled = false;
+      if (it.q.type === 'choice' && !it.q.multi) Array.prototype.forEach.call(it.el.querySelectorAll('.opt'), function (x) { x.classList.toggle('sel', it.mine[0] === x.getAttribute('data-i')); });
+      showErr(it, 'net');
     });
   }
 
-  function loadMine() {
-    if (!S.q) return Promise.resolve();
-    var qid = S.q.id;
-    return LV.rpc('lv_mine', { p_qid: qid, p_cid: cid }).then(function (m) { if (S.q && S.q.id === qid) S.mine = m || []; }, function () {});
+  function loadMine(it) {
+    return LV.rpc('lv_mine', { p_qid: it.q.id, p_cid: cid }).then(function (m) { it.mine = m || []; it.pick = null; }, function () {});
   }
 
-  function drawRes() {
-    var el = $('res'); if (!el || !S.q) return;
-    if (S.res && S.res.id === S.q.id) LV.renderResult(el.querySelector('.lv-body'), S.res, { compact: true });
+  function drawRes(it) {
+    var el = it.el.querySelector('.res .lv-body');
+    if (el && it.res) LV.renderResult(el, it.res, { compact: true });
   }
-  var resBusy = false;
-  function loadRes() {
-    if (PREVIEW || !S.q || !S.q.show_results || !S.mine.length || resBusy) return;
-    resBusy = true;
-    LV.rpc('lv_results', { p_qid: S.q.id }).then(function (r) { S.res = r; drawRes(); }, function () {}).then(function () { resBusy = false; });
+  function loadRes(it) {
+    if (PREVIEW || !it.q.show_results || !it.mine.length || it.resBusy) return;
+    it.resBusy = true;
+    LV.rpc('lv_results', { p_qid: it.q.id }).then(function (r) { it.res = r; drawRes(it); }, function () {}).then(function () { it.resBusy = false; });
   }
-  var loadResSoon = (function () { var t; return function () { clearTimeout(t); t = setTimeout(loadRes, 1200); }; })();
+  function loadResSoon(it) { clearTimeout(it.resT); it.resT = setTimeout(function () { loadRes(it); }, 1200); }
+
+  function busyIn(it) { return it.editing || (document.activeElement && it.el.contains(document.activeElement) && /TEXTAREA|INPUT/.test(document.activeElement.tagName)); }
 
   function applyState(st) {
     if (!st) { waitView('<b>방을 찾을 수 없어요</b>QR 코드를 다시 찍어 주세요'); return; }
     S.room = st.room;
     $('ttl').textContent = st.room.title;
     document.title = st.room.title;
-    var nq = st.q || null, oldId = S.q && S.q.id;
-    if (!nq) { S.q = null; renderQ(); return; }
-    var changed = oldId !== nq.id || JSON.stringify(nq) !== JSON.stringify(S.q);
-    if (oldId !== nq.id) {
-      S.q = nq; S.mine = []; S.editing = false; S.draft = ''; S.res = null;
+    var list = st.qs || (st.q ? [st.q] : []), ids = list.map(function (q) { return q.id; });
+    var added = [];
+    Object.keys(S.items).forEach(function (id) { if (ids.indexOf(id) < 0) delete S.items[id]; });
+    list.forEach(function (q) {
+      var it = S.items[q.id];
+      if (!it) {
+        it = S.items[q.id] = { q: q, mine: [], pick: null, editing: false, draft: '', res: null, el: document.createElement('section') };
+        it.el.className = 'qcard';
+        added.push(it);
+      } else if (JSON.stringify(it.q) !== JSON.stringify(q)) {
+        it.q = q; it.pick = null;
+        if (!busyIn(it)) renderCard(it);
+        loadRes(it);
+      }
+    });
+    var orderChanged = ids.join() !== S.order.join();
+    S.order = ids;
+    if (orderChanged) {
+      layoutCards();
+      S.order.forEach(function (id) { var it = S.items[id]; if (added.indexOf(it) < 0 && S.order.length && !busyIn(it)) renderCard(it); });
+    }
+    added.forEach(function (it) {
+      renderCard(it);
+      loadMine(it).then(function () { if (S.items[it.q.id] && !busyIn(it)) { renderCard(it); loadRes(it); } });
+    });
+    if (added.length) {
       // 새 질문이 열리면 질문 화면으로 (Q&A 쓰는 중이면 점만 표시)
       if (S.tab !== 'q') {
         var qt = $('qa-tx');
         if (qt && qt.value.trim()) $('tab-q').classList.add('has-new'); else setTab('q');
       }
-      loadMine().then(function () { renderQ(); loadRes(); });
-    } else if (changed) {
-      S.q = nq;
-      if (!S.editing && !(document.activeElement && /TEXTAREA|INPUT/.test(document.activeElement.tagName))) renderQ();
-      loadRes();
+      // 가장 최근에 연 질문이 새로 생겼으면 그쪽으로 스크롤
+      var latest = st.q && S.items[st.q.id];
+      if (latest && added.indexOf(latest) >= 0 && S.order.length > 1 && S.loadedOnce) setTimeout(function () { latest.el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
     }
+    S.loadedOnce = true;
   }
 
   var stBusy = false, stAgain = false;
@@ -357,9 +421,9 @@ footer{padding:16px 18px calc(18px + env(safe-area-inset-bottom));text-align:cen
     S.room = { title: '미리보기', qa_enabled: true, qa_moderation: true };
     window.addEventListener('message', function (e) {
       if (!e.data || !e.data.lvPreview) return;
-      S.q = e.data.lvPreview.q; S.mine = []; S.editing = false;
+      S.items = {}; S.order = [];
       $('ttl').textContent = e.data.lvPreview.title || '미리보기';
-      renderQ();
+      applyState({ room: S.room, qs: [e.data.lvPreview.q], q: e.data.lvPreview.q });
     });
     waitView('<b>잠시만요</b>강사가 질문을 열면 여기에 나타납니다');
     if (window.parent !== window) window.parent.postMessage({ lvPreviewReady: true }, '*');
@@ -371,7 +435,8 @@ footer{padding:16px 18px calc(18px + env(safe-area-inset-bottom));text-align:cen
   LV.rt.sub(room, function (m) {
     if (m.t === 'room' || m.t === 'q' || m.t === 'all' || m.t === 'resync') refreshState();
     if (m.t === 'qa' || m.t === 'room' || m.t === 'all' || m.t === 'resync') loadQASoon();
-    if ((m.t === 'r' && S.q && m.q === S.q.id) || m.t === 'resync') loadResSoon();
+    if (m.t === 'r' && S.items[m.q]) loadResSoon(S.items[m.q]);
+    if (m.t === 'resync') Object.keys(S.items).forEach(function (id) { loadResSoon(S.items[id]); });
   });
   // 실시간이 끊긴 동안에는 5초마다, 붙어 있으면 30초마다 상태 확인
   (function loop() {

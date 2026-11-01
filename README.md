@@ -5,10 +5,10 @@
 
 | 화면 | 주소 |
 |---|---|
-| 학생 (1주차) | https://ceaser501.github.io/lecture-server/?r=w1 |
-| 학생 (2주차) | https://ceaser501.github.io/lecture-server/?r=w2 |
-| 학생 (3주차) | https://ceaser501.github.io/lecture-server/?r=w3 |
-| 강사 관리 (PC · 폰) | https://ceaser501.github.io/lecture-server/admin.html |
+| 학생 (1주차) | https://ceaser501.github.io/lecture-survey/?r=w1 |
+| 학생 (2주차) | https://ceaser501.github.io/lecture-survey/?r=w2 |
+| 학생 (3주차) | https://ceaser501.github.io/lecture-survey/?r=w3 |
+| 강사 관리 (PC · 폰) | https://ceaser501.github.io/lecture-survey/admin.html |
 | 덱 위젯 예시 | `deck-example.html` (내려받아 `file://`로 열기) |
 
 QR 이미지: `qr/w1.png`, `qr/w2.png`, `qr/w3.png` (인쇄용 1200px, SVG도 있음). 방마다 1개, 질문과 상관없이 그대로 씁니다.

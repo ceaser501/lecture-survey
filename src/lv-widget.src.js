@@ -11,7 +11,7 @@
   var CFG = Object.assign({
     url: 'https://gxyckkinlygeasruapmj.supabase.co',
     key: '@@ANON_KEY@@',
-    site: 'https://ceaser501.github.io/lecture-server/'
+    site: 'https://ceaser501.github.io/lecture-survey/'
   }, window.LV_CONFIG || {});
 
   /* ───────── QR 생성기 (qrcode-generator, MIT, Kazuhiko Arase) ───────── */

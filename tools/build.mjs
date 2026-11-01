@@ -11,6 +11,6 @@ let src = readFileSync(root + 'src/lv-widget.src.js', 'utf8');
 src = src.replace("/*@@QRCODE@@*/ null", '(function(){var window={};' + qrMin + 'return window.__lvqr;})()')
          .replace("'@@ANON_KEY@@'", JSON.stringify(cfg.anonKey))
          .replace("'https://gxyckkinlygeasruapmj.supabase.co'", JSON.stringify(cfg.supabaseUrl))
-         .replace("'https://ceaser501.github.io/lecture-server/'", JSON.stringify(cfg.site));
+         .replace("'https://ceaser501.github.io/lecture-survey/'", JSON.stringify(cfg.site));
 writeFileSync(root + 'lv-widget.js', '/* lv-widget.js — 자동 생성 파일 (원본: src/lv-widget.src.js, 만들기: node tools/build.mjs)\n   QR 부분: qrcode-generator (c) 2009 Kazuhiko Arase, MIT License */\n' + src);
 console.log('lv-widget.js', (src.length / 1024).toFixed(1) + 'KB');

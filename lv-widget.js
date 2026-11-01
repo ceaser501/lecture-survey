@@ -13,7 +13,7 @@
   var CFG = Object.assign({
     url: "https://gxyckkinlygeasruapmj.supabase.co",
     key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4eWNra2lubHlnZWFzcnVhcG1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxMzcwNzQsImV4cCI6MjEwNTcxMzA3NH0.8YYHtKltWy4cER_YLM5Wbn5lol1-ExvVo8iMt2QWRR0",
-    site: "https://ceaser501.github.io/lecture-server/"
+    site: "https://ceaser501.github.io/lecture-survey/"
   }, window.LV_CONFIG || {});
 
   /* ───────── QR 생성기 (qrcode-generator, MIT, Kazuhiko Arase) ───────── */

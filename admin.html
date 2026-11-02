@@ -48,11 +48,15 @@ h2:first-child{margin-top:0}
 .live .lp{font-size:20px;font-weight:700;line-height:1.35;margin-top:2px;word-break:keep-all}
 .live .ln{font-size:14px;color:var(--sub);margin-top:4px}
 .qs{display:flex;flex-direction:column;gap:10px}
-.qi{display:grid;grid-template-columns:1fr auto;gap:10px 16px;align-items:center;background:var(--card);border-radius:16px;padding:14px 16px;border:2px solid transparent}
-.qi.open{border-color:var(--acc)}
-.qi .qt{font-size:13px;color:var(--sub)}
-.qi .qt b{color:var(--ink);font-weight:600}
-.qi .qt .key{color:var(--acc);font-weight:700}
+.qi{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:var(--card);border-radius:16px;padding:14px 12px 14px 16px}
+.qi.open{background:#232325}
+.qi .qt{font-size:13px;color:var(--mute)}
+.qi .qt .on{color:var(--acc);font-weight:700}
+.stat{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:12px 12px 12px 18px;margin-bottom:6px}
+.stat .dot{width:10px;height:10px;border-radius:50%;background:var(--acc)}
+.stat .muted{font-size:14px}
+.stat b.muted{font-size:16px;color:var(--sub)}
+.stat .sp{flex:1}
 .qi .qp{font-size:17px;font-weight:600;line-height:1.4;word-break:keep-all;margin-top:2px}
 .qi .qa{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .qi .qx{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
@@ -328,32 +332,32 @@ textarea{resize:vertical;min-height:70px}
 
   function renderQuestions() {
     var opens = openList(), main = $('#main');
-    var html = '<h2 style="display:flex;align-items:center">지금 열린 질문 ' + (opens.length ? opens.length + '개' : '') + '<span style="flex:1"></span>' +
-      (opens.length > 1 ? '<button class="btn sm" id="close-all">모두 닫기</button>' : '') + '</h2>';
-    if (!opens.length) html += '<div class="card live"><div class="lt"><div class="lk off">닫힘</div><div class="lp muted">학생 화면: 「강사가 질문을 열면 여기에 나타납니다」</div>' +
-      '<div class="ln">여러 질문을 함께 열면 학생 화면에 차례로 모두 나와요</div></div></div>';
-    opens.forEach(function (a) {
-      html += '<div class="card live" style="margin-bottom:10px"><div class="lt"><div class="lk">● ' + TYPE[a.type] + ' · 받는 중</div><div class="lp">' + esc(a.prompt) + '</div><div class="ln">' + (S.counts[a.id] || 0) + '명 참여</div></div>' +
-        '<button class="btn" data-full="' + a.id + '">전체보기</button><button class="btn lg" data-close="' + a.id + '">닫기</button></div>';
-    });
+    // 위: 상태 한 줄 (열린 질문 수 · 결과 화면 · 모두 닫기)
+    var html = '<div class="stat">' + (opens.length
+        ? '<span class="dot"></span><b>받는 중 ' + opens.length + '개</b><span class="muted">학생 폰에 차례로 나와요</span>'
+        : '<b class="muted">모두 닫힘</b><span class="muted">학생 화면은 「질문을 기다리는 중」</span>') +
+      '<span class="sp"></span>' +
+      (opens.length ? '<button class="btn sm" id="close-all">모두 닫기</button>' : '') + '</div>';
     html += '<h2 style="display:flex;align-items:center">질문 ' + S.questions.length + '개<span style="flex:1"></span><button class="btn pri" id="new">+ 새 질문</button></h2>';
     if (!S.questions.length) html += '<div class="empty">아직 질문이 없어요.<br>「+ 새 질문」으로 강의에서 쓸 질문을 미리 올려 두세요.</div>';
+    else html += '<p class="small" style="margin:-4px 0 10px">스위치를 켜면 학생 폰에 질문이 열려요</p>';
     html += '<div class="qs">';
     S.questions.forEach(function (q, i) {
       var open = !!q.is_open;
-      html += '<div class="qi' + (open ? ' open' : '') + '"><div class="qm" data-edit="' + q.id + '"><div class="qt"><span class="qn">' + (i + 1) + '</span><b>' + TYPE[q.type] + (q.multi ? '(복수)' : '') + '</b>' +
-        (q.key ? ' · 키 <span class="key">' + esc(q.key) + '</span>' : '') + ' · ' + (S.counts[q.id] || 0) + '명' + (open ? ' · <span class="key">받는 중</span>' : '') +
+      html += '<div class="qi' + (open ? ' open' : '') + '">' +
+        '<label class="sw" title="' + (open ? '닫기' : '열기') + '"><input type="checkbox" data-tog="' + q.id + '"' + (open ? ' checked' : '') + '><span></span></label>' +
+        '<div class="qm" data-edit="' + q.id + '"><div class="qt"><span class="qn">' + (i + 1) + '</span>' + TYPE[q.type] + (q.multi ? '(복수)' : '') +
+        (q.key ? ' · 키 ' + esc(q.key) : '') + ' · ' + (S.counts[q.id] || 0) + '명' + (open ? ' · <span class="on">받는 중</span>' : '') +
         '</div><div class="qp">' + esc(q.prompt) + '</div></div>' +
-        '<div class="qa">' + (open ? '<button class="btn" data-close="' + q.id + '">닫기</button>' : '<button class="btn pri" data-open="' + q.id + '">열기</button>') +
-        '<button class="btn more" data-more="' + i + '" aria-label="더 보기">⋯</button></div></div>';
+        '<button class="btn more" data-more="' + i + '" aria-label="더 보기">⋯</button></div>';
     });
     html += '</div>';
     main.innerHTML = html;
     if ($('#close-all')) $('#close-all').onclick = function () { closeAll(); };
-    $$('[data-full]', main).forEach(function (b) { b.onclick = function () { fullView(b.getAttribute('data-full')); }; });
+    $$('[data-tog]', main).forEach(function (c) {
+      c.onchange = function () { c.disabled = true; (c.checked ? openQ : closeQ)(c.getAttribute('data-tog')).then(function () { c.disabled = false; }); };
+    });
     $('#new').onclick = function () { editor(null); };
-    $$('[data-close]', main).forEach(function (b) { b.onclick = function () { closeQ(b.getAttribute('data-close')); }; });
-    $$('[data-open]', main).forEach(function (b) { b.onclick = function () { openQ(b.getAttribute('data-open')); }; });
     $$('[data-edit]', main).forEach(function (b) { b.onclick = function () { editor(findQ(b.getAttribute('data-edit'))); }; });
     $$('[data-more]', main).forEach(function (b) {
       b.onclick = function (e) {

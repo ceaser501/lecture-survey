@@ -347,7 +347,7 @@ footer{padding:16px 18px calc(18px + env(safe-area-inset-bottom));text-align:cen
     var focused = document.activeElement && document.activeElement.id === 'qa-tx';
     var html = '';
     if (!on) html += '<div class="wait">지금은 Q&amp;A를 받지 않아요</div>';
-    else html += '<form class="qa-form" id="qa-f"><p class="qa-intro">Q&amp;A는 수업이 끝날 때까지 열어둡니다. 궁금한 게 있을 때 바로바로 올려주세요. 좋아요를 통해 공감할 수도 있어요.</p>' +
+    else html += '<form class="qa-form" id="qa-f"><p class="qa-intro">수업 중 궁금한 내용이 있으면 언제든 작성해 주세요.</p>' +
       '<textarea id="qa-tx" maxlength="150" rows="3" placeholder="질문을 써 주세요"></textarea>' +
       '<div class="meta"><span>' + (S.room && S.room.qa_moderation ? '강사가 확인한 뒤 모두에게 보여요' : '최대 150자') + '</span><span id="qa-cnt">0/150</span></div>' +
       '<button class="btn" id="qa-send" type="submit">질문 보내기</button><div class="ok" id="qa-ok"></div><div class="err" id="qa-err"></div></form>';

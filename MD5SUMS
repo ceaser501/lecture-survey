@@ -5,7 +5,7 @@ ad959e86a121cb93263c8b586b2d0e97  admin.html
 b327bb3470f51328fc6058cb1037a8c4  config.json
 b119b6340171ce6e68014a2ee528b105  deck-example.html
 3ab7b1b1bb1786df0dafa223a11b8e5e  docs/리허설_체크리스트.md
-8a6fa9e46f8a6e570e15d01772739593  index.html
+2f9d7af491dcd418e3cae27e17225d33  index.html
 a7a7c09da34cd2d3588a7a1b938ff5cc  lv-widget.css
 b4b2377ab832b068f4674c588ea108d8  lv-widget.js
 b9423d94854ea9cdaa7f12ede1fbe7f4  qr/w1.png
@@ -14,7 +14,7 @@ b9423d94854ea9cdaa7f12ede1fbe7f4  qr/w1.png
 f3890aec0122757ba814fe78b47c6435  qr/w2.svg
 61845a9c9489aca882df19a0c3812c98  qr/w3.png
 a1e65076b9940c533675b0a0ef493c7d  qr/w3.svg
-0145f6105b3dddf7b61e46b2b7afebdb  screen.html
+56fbe6b39eefd486a384eb88167610b5  screen.html
 d990d14daeedd8275ef294a7e327e350  sql/001_lv_init.sql
 50562e9b03e7c5ff2c6745dc4efb34e5  sql/002_multi_open.sql
 d206992e1d1cdbf24aee06e34f55fc13  sql/003_word_links.sql

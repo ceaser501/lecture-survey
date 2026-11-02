@@ -293,14 +293,14 @@
     });
   }
 
-  // 주관식: 기본은 한 장씩 크게 넘겨 보기(먼저 온 답부터), 「응답 전체보기」를 누르면 말풍선 카드를 모두 펼친다.
+  // 주관식: 처음엔 말풍선 카드 전체보기, 카드를 누르면 그 답부터 한 장씩 크게 (먼저 온 답 순서).
   // 학생 폰(compact)은 늘 펼친 모양
   function renderText(body, res, o) {
     var items = (res.data || []).slice(0, o.compact ? 30 : 40);
     if (!items.length) { body.innerHTML = '<div class="lv-msg">아직 답변이 없어요</div>'; body._spotQ = null; return; }
     if (o.compact) return renderTextGrid(body, body, res, items, o);
     var st = body._spot;
-    if (!st || st.q !== res.id) st = body._spot = { q: res.id, mode: 'one', id: null };
+    if (!st || st.q !== res.id) st = body._spot = { q: res.id, mode: 'all', id: null }; // 처음엔 전체보기, 카드를 누르면 한 장씩
     var shell = body.querySelector('.lv-tx');
     if (!shell || shell.getAttribute('data-mode') !== st.mode || shell.getAttribute('data-q') !== res.id) {
       body.innerHTML = '';

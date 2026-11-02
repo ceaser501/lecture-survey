@@ -110,6 +110,8 @@
 .lv-spot-prev,.lv-spot-next{font-size:28px;line-height:1;padding:8px 20px}
 .lv-tbtn:disabled{opacity:.3;cursor:default}
 .lv-tx-grid{flex:1;min-height:0}
+.lv-tx-grid .lv-card{cursor:pointer;transition:background .15s}
+.lv-tx-grid .lv-card:hover{background:var(--lv-card2)}
 
 /* 워드클라우드 */
 .lv-cloud{position:absolute;inset:0;overflow:hidden}

@@ -315,6 +315,12 @@
         top.lastChild.onclick = function () { st.mode = 'one'; renderText(body, body._last, o); };
         shell.appendChild(top);
         var g = h('div', 'lv-tx-grid'); shell.appendChild(g);
+        // 펼친 카드 중 하나를 누르면 그 답부터 한 장씩 크게
+        g.addEventListener('click', function (e) {
+          var c = e.target.closest && e.target.closest('.lv-card'); if (!c) return;
+          st.mode = 'one'; st.id = c.getAttribute('data-id'); st.dir = 1;
+          renderText(body, body._last, o);
+        });
       }
       top.firstChild.textContent = '응답 ' + (res.data || []).length + '개';
       body._last = res;

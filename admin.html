@@ -669,7 +669,8 @@ textarea{resize:vertical;min-height:70px}
     groups.approved.sort(function (a, b) { return b.likes - a.likes; });
     var html = '<div class="card" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>Q&amp;A ' + (r.qa_enabled ? '받는 중' : '꺼짐') + '</b>' +
       '<div class="small">' + (r.qa_moderation ? '승인한 질문만 공개돼요' : '승인 없이 바로 공개돼요 (금지어는 대기로)') + '</div></div>' +
-      '<label class="sw" title="Q&A 켜기/끄기"><input type="checkbox" id="qa-on"' + (r.qa_enabled ? ' checked' : '') + '><span></span></label></div>';
+      '<label class="sw" title="Q&A 켜기/끄기"><input type="checkbox" id="qa-on"' + (r.qa_enabled ? ' checked' : '') + '><span></span></label></div>' +
+      (S.qa.length ? '<div class="toolbar" style="margin:12px 0 0"><span class="sp"></span><button class="btn sm line" id="qa-wipe">Q&amp;A ' + S.qa.length + '개 모두 삭제</button></div>' : '');
     function sec(title, list, acts) {
       html += '<h2>' + title + ' ' + list.length + '</h2>';
       if (!list.length) { html += '<div class="small" style="padding:4px 2px 8px">없음</div>'; return; }
@@ -677,7 +678,8 @@ textarea{resize:vertical;min-height:70px}
       list.forEach(function (a) {
         html += '<div class="li' + (a.status === 'hidden' || a.status === 'answered' ? ' dim' : '') + '"><div class="tx">' + esc(a.body) +
           (a.blocked ? ' <span class="flag">금지어</span>' : '') + '<span class="small">' + time(a.created_at) + ' · 나도 궁금해 ' + a.likes + '</span></div><div class="acts">' +
-          acts.map(function (x) { return '<button class="btn sm' + (x[2] ? ' pri' : '') + '" data-qa="' + a.id + '" data-s="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div></div>';
+          acts.map(function (x) { return '<button class="btn sm' + (x[2] ? ' pri' : '') + '" data-qa="' + a.id + '" data-s="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+          '<button class="btn sm line" data-qdel="' + a.id + '" title="삭제">삭제</button></div></div>';
       });
       html += '</div>';
     }
@@ -687,6 +689,23 @@ textarea{resize:vertical;min-height:70px}
     sec('숨김', groups.hidden, [['approved', '공개'], ['pending', '대기로']]);
     main.innerHTML = html;
     $('#qa-on').onchange = function () { setRoom({ qa_enabled: this.checked }); };
+    // 질문 하나 삭제 (나도 궁금해 기록도 함께 지워짐)
+    $$('[data-qdel]', main).forEach(function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-qdel'), a = S.qa.filter(function (x) { return String(x.id) === id; })[0];
+        if (!confirm('이 질문을 삭제할까요?\n\n「' + (a ? a.body : '') + '」\n\n지우면 되살릴 수 없어요.')) return;
+        b.disabled = true;
+        api('lv_qa?id=eq.' + id, { method: 'DELETE' }).then(function () {
+          S.qa = S.qa.filter(function (x) { return String(x.id) !== id; }); render(); LV.toast('삭제했어요');
+        }, fail);
+      };
+    });
+    if ($('#qa-wipe')) $('#qa-wipe').onclick = function () {
+      if (prompt(S.room.id + ' 방의 Q&A ' + S.qa.length + '개를 모두 지웁니다. 되살릴 수 없어요.\n계속하려면 「삭제」라고 입력하세요') !== '삭제') return;
+      api('lv_qa?room_id=eq.' + S.room.id, { method: 'DELETE' }).then(function () {
+        S.qa = []; render(); LV.toast('Q&A를 모두 지웠어요');
+      }, fail);
+    };
     $$('[data-qa]', main).forEach(function (b) {
       b.onclick = function () {
         var st = b.getAttribute('data-s'), id = b.getAttribute('data-qa'), body = { status: st };

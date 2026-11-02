@@ -87,6 +87,30 @@
 .lv-card.lv-new{animation:lv-in .6s cubic-bezier(.2,1.2,.4,1)}
 @keyframes lv-in{from{opacity:0;transform:translateY(18px) scale(.94)}}
 
+/* 주관식 — 한 장씩 크게 */
+.lv-tx{display:flex;flex-direction:column;height:100%;min-height:0}
+.lv-spot-stage{position:relative;flex:1;min-height:0;overflow:hidden;cursor:pointer}
+.lv-spot-card{position:absolute;inset:0 0 6px;display:flex;align-items:center;padding:40px 60px 40px 120px;border-radius:32px 32px 32px 10px;
+  background:var(--lv-card);color:var(--lv-ink);font-weight:700;line-height:1.45;letter-spacing:-.02em;word-break:keep-all;overflow-wrap:anywhere;
+  transition:transform .45s cubic-bezier(.2,.8,.2,1),opacity .45s}
+.lv-spot-card::before{content:"\201C";position:absolute;left:38px;top:22px;font-family:Georgia,"Times New Roman",serif;font-size:120px;line-height:1;color:var(--lv-acc)}
+.lv-spot-card.lv-from-r{animation:lv-from-r .45s cubic-bezier(.2,.8,.2,1)}
+.lv-spot-card.lv-from-l{animation:lv-from-l .45s cubic-bezier(.2,.8,.2,1)}
+.lv-spot-card.lv-to-l{transform:translateX(-12%);opacity:0}
+.lv-spot-card.lv-to-r{transform:translateX(12%);opacity:0}
+@keyframes lv-from-r{from{transform:translateX(12%);opacity:0}}
+@keyframes lv-from-l{from{transform:translateX(-12%);opacity:0}}
+.lv-spot-bar,.lv-tx-top{display:flex;align-items:center;gap:12px;margin-top:16px}
+.lv-tx-top{margin:0 0 16px}
+.lv-sp{flex:1}
+.lv-spot-pos{min-width:80px;text-align:center;font-size:22px;color:var(--lv-sub);font-variant-numeric:tabular-nums}
+.lv-spot-pos b{color:var(--lv-ink);font-size:28px}
+.lv-tx-n{flex:1;font-size:20px;color:var(--lv-sub)}
+.lv-tbtn{font:inherit;font-size:18px;font-weight:600;border:0;border-radius:12px;padding:10px 18px;background:var(--lv-card2);color:var(--lv-ink);cursor:pointer}
+.lv-spot-prev,.lv-spot-next{font-size:28px;line-height:1;padding:8px 20px}
+.lv-tbtn:disabled{opacity:.3;cursor:default}
+.lv-tx-grid{flex:1;min-height:0}
+
 /* 워드클라우드 */
 .lv-cloud{position:absolute;inset:0;overflow:hidden}
 .lv-word{position:absolute;white-space:nowrap;font-weight:800;line-height:1;color:var(--lv-sub);

@@ -293,13 +293,40 @@
     });
   }
 
-  // 주관식: 말풍선 카드를 칸에 맞춰 가지런히. 답이 적을수록 크게, 가장 최근 답은 주황 테두리
+  // 주관식: 기본은 한 장씩 크게 넘겨 보기(먼저 온 답부터), 「응답 전체보기」를 누르면 말풍선 카드를 모두 펼친다.
+  // 학생 폰(compact)은 늘 펼친 모양
   function renderText(body, res, o) {
     var items = (res.data || []).slice(0, o.compact ? 30 : 40);
-    if (!items.length) { body.innerHTML = '<div class="lv-msg">아직 답변이 없어요</div>'; return; }
-    var wrap = body.querySelector('.lv-cards');
+    if (!items.length) { body.innerHTML = '<div class="lv-msg">아직 답변이 없어요</div>'; body._spotQ = null; return; }
+    if (o.compact) return renderTextGrid(body, body, res, items, o);
+    var st = body._spot;
+    if (!st || st.q !== res.id) st = body._spot = { q: res.id, mode: 'one', id: null };
+    var shell = body.querySelector('.lv-tx');
+    if (!shell || shell.getAttribute('data-mode') !== st.mode || shell.getAttribute('data-q') !== res.id) {
+      body.innerHTML = '';
+      shell = h('div', 'lv-tx'); shell.setAttribute('data-mode', st.mode); shell.setAttribute('data-q', res.id);
+      body.appendChild(shell);
+      shell.addEventListener('click', function (e) { e.stopPropagation(); });
+    }
+    if (st.mode === 'all') {
+      var top = shell.querySelector('.lv-tx-top');
+      if (!top) {
+        top = h('div', 'lv-tx-top', '<span class="lv-tx-n"></span><button type="button" class="lv-tbtn">한 장씩 보기</button>');
+        top.lastChild.onclick = function () { st.mode = 'one'; renderText(body, body._last, o); };
+        shell.appendChild(top);
+        var g = h('div', 'lv-tx-grid'); shell.appendChild(g);
+      }
+      top.firstChild.textContent = '응답 ' + (res.data || []).length + '개';
+      body._last = res;
+      return renderTextGrid(body, shell.querySelector('.lv-tx-grid'), res, items, o);
+    }
+    renderSpot(body, shell, res, st, o);
+  }
+
+  function renderTextGrid(body, host, res, items, o) {
+    var wrap = host.querySelector('.lv-cards');
     if (!wrap || wrap.getAttribute('data-q') !== res.id) {
-      body.innerHTML = ''; wrap = h('div', 'lv-cards'); wrap.setAttribute('data-q', res.id); body.appendChild(wrap);
+      host.innerHTML = ''; wrap = h('div', 'lv-cards'); wrap.setAttribute('data-q', res.id); host.appendChild(wrap);
       wrap._first = true;
     }
     var n = items.length;
@@ -316,6 +343,48 @@
       frag.appendChild(el);
     });
     wrap.innerHTML = ''; wrap.appendChild(frag); wrap._first = false;
+  }
+
+  function renderSpot(body, shell, res, st, o) {
+    var list = (res.data || []).slice().reverse(); // 먼저 온 답부터 차례로. 새 답은 뒤에 붙어 지금 보던 카드가 밀리지 않는다
+    var idx = 0;
+    for (var i = 0; i < list.length; i++) if (String(list[i].id) === String(st.id)) { idx = i; break; }
+    if (st.id == null || idx >= list.length) idx = Math.min(idx, list.length - 1);
+    var stage = shell.querySelector('.lv-spot-stage');
+    if (!stage) {
+      shell.innerHTML = '<div class="lv-spot-stage"></div><div class="lv-spot-bar">' +
+        '<button type="button" class="lv-tbtn lv-spot-prev" aria-label="이전 답">‹</button><span class="lv-spot-pos"></span>' +
+        '<button type="button" class="lv-tbtn lv-spot-next" aria-label="다음 답">›</button><span class="lv-sp"></span>' +
+        '<button type="button" class="lv-tbtn lv-spot-all">응답 전체보기</button></div>';
+      stage = shell.querySelector('.lv-spot-stage');
+      var go = function (d) {
+        var L = (body._last.data || []).slice().reverse(), cur = 0;
+        for (var k = 0; k < L.length; k++) if (String(L[k].id) === String(st.id)) cur = k;
+        var nx = cur + d; if (nx < 0 || nx >= L.length) return;
+        st.id = L[nx].id; st.dir = d; renderSpot(body, shell, body._last, st, o);
+      };
+      shell.querySelector('.lv-spot-prev').onclick = function () { go(-1); };
+      shell.querySelector('.lv-spot-next').onclick = function () { go(1); };
+      stage.onclick = function () { go(1); };
+      shell.querySelector('.lv-spot-all').onclick = function () { st.mode = 'all'; renderText(body, body._last, o); };
+      shell._go = go;
+    }
+    body._last = res;
+    var it = list[idx]; st.id = it.id;
+    shell.querySelector('.lv-spot-pos').innerHTML = '<b>' + (idx + 1) + '</b> / ' + list.length;
+    shell.querySelector('.lv-spot-prev').disabled = idx === 0;
+    shell.querySelector('.lv-spot-next').disabled = idx === list.length - 1;
+    var cur = stage.querySelector('.lv-spot-card:not(.lv-out)');
+    if (cur && cur.getAttribute('data-id') === String(it.id) && cur.textContent === it.v) return;
+    var len = it.v.length, card = h('div', 'lv-spot-card' + (cur ? (st.dir < 0 ? ' lv-from-l' : ' lv-from-r') : ''));
+    card.setAttribute('data-id', it.id);
+    card.style.fontSize = (len <= 30 ? 54 : len <= 55 ? 46 : len <= 80 ? 40 : 34) + 'px';
+    card.textContent = it.v;
+    if (cur) {
+      cur.classList.add('lv-out', st.dir < 0 ? 'lv-to-r' : 'lv-to-l');
+      setTimeout(function () { cur.remove(); }, 450);
+    }
+    stage.appendChild(card);
   }
 
   var measureCtx = null;

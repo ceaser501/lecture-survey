@@ -78,6 +78,9 @@
 .lv-cards.lv-s2{--lv-cw:340px;--lv-cf:26px}
 .lv-cards.lv-s3{--lv-cw:300px;--lv-cf:22px;gap:14px}
 .lv-cards.lv-s4{--lv-cw:250px;--lv-cf:19px;gap:12px}
+.lv-cards.lv-s5{--lv-cw:230px;--lv-cf:17px;gap:10px}
+.lv-cards.lv-s5 .lv-card{padding:16px 18px 18px 44px}
+.lv-cards.lv-s5 .lv-card::before{font-size:48px;left:12px;top:6px}
 .lv-card{position:relative;padding:22px 26px 24px 54px;border-radius:24px 24px 24px 8px;background:var(--lv-card);
   font-size:var(--lv-cf);line-height:1.45;font-weight:600;color:var(--lv-ink);word-break:keep-all;overflow-wrap:anywhere}
 .lv-card::before{content:"\201C";position:absolute;left:16px;top:8px;font-family:Georgia,"Times New Roman",serif;font-size:64px;line-height:1;font-weight:700;color:#48484A}
@@ -110,6 +113,11 @@
 .lv-spot-prev,.lv-spot-next{font-size:28px;line-height:1;padding:8px 20px}
 .lv-tbtn:disabled{opacity:.3;cursor:default}
 .lv-tx-grid{flex:1;min-height:0}
+/* 답이 많으면 카드 목록 안에서 스크롤 (휠 · 트랙패드 · 결과 화면 ↑ ↓) */
+.lv-tx-grid .lv-cards{overflow-y:auto;overscroll-behavior:contain;padding:0 8px 24px 0;scrollbar-width:thin;scrollbar-color:#48484A transparent;
+  -webkit-mask-image:linear-gradient(#000 calc(100% - 40px),transparent);mask-image:linear-gradient(#000 calc(100% - 40px),transparent)}
+.lv-tx-grid .lv-cards::-webkit-scrollbar{width:8px}
+.lv-tx-grid .lv-cards::-webkit-scrollbar-thumb{background:#48484A;border-radius:4px}
 .lv-tx-grid .lv-card{cursor:pointer;transition:background .15s}
 .lv-tx-grid .lv-card:hover{background:var(--lv-card2)}
 
@@ -158,7 +166,7 @@
 .lv-compact .lv-bar-n{font-size:13px}
 .lv-compact .lv-bar-track{height:12px}
 .lv-compact .lv-bar-fill{border-radius:6px}
-.lv-compact .lv-cards{--lv-cw:220px;--lv-cf:16px;gap:10px;height:auto;max-height:440px}
+.lv-compact .lv-cards{--lv-cw:220px;--lv-cf:16px;gap:10px;height:auto}
 .lv-compact .lv-card{padding:12px 14px 12px 34px;border-radius:16px 16px 16px 6px}
 .lv-compact .lv-card::before{font-size:32px;left:10px;top:6px}
 

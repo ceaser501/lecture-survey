@@ -298,7 +298,7 @@
   // 주관식: 처음엔 말풍선 카드 전체보기, 카드를 누르면 그 답부터 한 장씩 크게 (먼저 온 답 순서).
   // 학생 폰(compact)은 늘 펼친 모양
   function renderText(body, res, o) {
-    var items = (res.data || []).slice(0, o.compact ? 30 : 40);
+    var items = (res.data || []).slice(); // 전부 보여 준다 (넘치면 스크롤)
     if (!items.length) { body.innerHTML = '<div class="lv-msg">아직 답변이 없어요</div>'; body._spotQ = null; return; }
     if (o.compact) return renderTextGrid(body, body, res, items, o);
     var st = body._spot;
@@ -338,7 +338,11 @@
       wrap._first = true;
     }
     var n = items.length;
-    wrap.className = 'lv-cards ' + (n <= 4 ? 'lv-s1' : n <= 9 ? 'lv-s2' : n <= 16 ? 'lv-s3' : 'lv-s4');
+    wrap.className = 'lv-cards ' + (n <= 4 ? 'lv-s1' : n <= 9 ? 'lv-s2' : n <= 16 ? 'lv-s3' : n <= 28 ? 'lv-s4' : 'lv-s5');
+    if (!wrap._wheel) { // 덱 · 결과 화면이 휠을 다른 데 쓰지 않도록 카드 목록 안에서만 스크롤
+      wrap._wheel = true;
+      wrap.addEventListener('wheel', function (e) { e.stopPropagation(); }, { passive: true });
+    }
     var have = {};
     Array.prototype.forEach.call(wrap.children, function (c) { have[c.getAttribute('data-id') + '|' + c.textContent] = c; });
     var frag = document.createDocumentFragment();

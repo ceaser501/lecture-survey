@@ -45,6 +45,10 @@ body.show-bar .bar,.bar:hover{opacity:1}
 .dots i{width:8px;height:8px;border-radius:50%;background:#2C2C2E}
 .dots i.on{background:var(--sub)}
 .dots i.live{background:var(--acc)}
+/* 왼쪽 위 발표 모드 버튼 (강의 덱과 같은 모양 · 동작) */
+.pm{position:fixed;left:14px;top:10px;z-index:11;opacity:.25;transition:opacity .2s}
+.pm:hover{opacity:1}
+.pm button{font:inherit;font-size:13px;padding:6px 12px;border-radius:8px;border:1px solid #333;background:#111;color:#ccc;cursor:pointer}
 .off{position:fixed;right:16px;top:12px;font-size:14px;color:var(--mute);display:none}
 body.offline .off{display:block}
 </style>
@@ -52,6 +56,7 @@ body.offline .off{display:block}
 <body>
 <div id="stage"></div>
 <div class="dots" id="dots"></div>
+<div class="pm"><button id="pmbtn" title="전체화면 (F)">⛶ 발표 모드</button></div>
 <div class="off">연결 안 됨</div>
 <div class="bar" id="bar">
   <button id="prev" title="이전 (←)">←</button>
@@ -165,6 +170,13 @@ body.offline .off{display:block}
     var p = sl.open ? LV.rpc('lv_admin_close', { p_qid: sl.k }, true) : LV.rpc('lv_admin_open', { p_room: room, p_qid: sl.k }, true);
     p.then(load, function () { LV.toast('강사 로그인이 필요해요 (관리 화면에서 로그인)'); });
   };
+  $('pmbtn').onclick = function (e) { e.stopPropagation(); $('fs').onclick(); };
+  document.addEventListener('fullscreenchange', function () {
+    var on = !!document.fullscreenElement;
+    $('pmbtn').textContent = on ? '✕ 발표 종료' : '⛶ 발표 모드';
+    $('fs').textContent = on ? '전체화면 끄기' : '전체화면';
+    fit();
+  });
   $('fs').onclick = function (e) {
     if (e) e.stopPropagation();
     if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(function () {});
